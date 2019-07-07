@@ -5,13 +5,13 @@
  * University of Valencia (Valencia, Spain)
  * 
  * November 2018
- * Last update: July 06, 2019
+ * Last update: July 07, 2019
  */
 
 macro "NC-Adh" {
 
 //choose a macro mode and a directory
-#@ String (label=" ", value="<html><font size=6><b>High Content Screening</font><br><font color=teal>N-Cadherin-mediated Adhesion</font></b></html>", visibility=MESSAGE, persist=false) heading
+#@ String (label=" ", value="<html><font size=6><b>High Content</font><br><font color=teal>N-Cadherin-mediated Adhesion</font></b></html>", visibility=MESSAGE, persist=false) heading
 #@ String(label="Select mode:", choices={"Analysis", "Pre-Analysis (parameter tweaking)"}, style="radioButtonVertical") mode
 #@ File(label="Select a directory:", style="directory") dir
 #@ String (label=" ", value="<html><img src=\"http://oi64.tinypic.com/ekrmvs.jpg\"></html>", visibility=MESSAGE, persist=false) logo
@@ -263,14 +263,24 @@ macro "NC-Adh" {
 			field=Dialog.getChoice();
 			counterstain=well+"(fld "+field+" wv "+channels[0]+ " - "+channels[0]+").tif";
 			tracker=well+"(fld "+field+" wv "+channels[1]+ " - "+channels[1]+").tif";
-			//Monolayer
+			//Merge
 			open(dir+File.separator+counterstain);
 			run("Duplicate...", "title=Nuclei");
 			run("Duplicate...", "title=Nuclei_8-bit");
 			run("8-bit");
+			open(dir+File.separator+tracker);
+			run("Duplicate...", "title=Find_Maxima");
+			selectImage(counterstain);
+			run("Enhance Contrast...", "saturated=0.1 normalize");
+			selectImage(tracker);
+			run("Enhance Contrast...", "saturated=0.1 normalize");
+			run("Merge Channels...", "c1=["+tracker+"] c3=["+counterstain+"] keep");
+			rename("1 - Merge");
+			//Monolayer
 			selectImage("Nuclei");
 			run("Enhance Contrast...", "saturated=0.1 normalize");
-			run("Mean...", "radius=5");
+			run("Mean...", "radius=2");
+			run("Median...", "radius=10");
 			setAutoThreshold("Triangle dark");
 			run("Convert to Mask");
 			resetThreshold();
@@ -280,16 +290,30 @@ macro "NC-Adh" {
 			run("Invert");
 			imageCalculator("XOR create", "Nuclei","Monolayer");
 			rename("Monolayer_no-nuclei");
-			run("Merge Channels...", "c2=Background c3=Monolayer_no-nuclei c4=[Nuclei_8-bit] keep");
+			run("Merge Channels...", "c3=Background c2=Monolayer_no-nuclei c4=[Nuclei_8-bit] keep");
+			rename("2 - M/B");
 			//Tracker-labeled cells
-			open(dir+File.separator+tracker);
-			//Merge
-			selectImage(counterstain);
+			selectWindow("Find_Maxima");
+			run("Point Tool...", "type=Dot color=Magenta size=Large label counter=0");
+			setOption("ScaleConversions", true);
+			run("8-bit");
+			run("Subtract Background...", "rolling=100");
 			run("Enhance Contrast...", "saturated=0.1 normalize");
-			selectImage(tracker);
-			run("Enhance Contrast...", "saturated=0.1 normalize");
-			run("Merge Channels...", "c1=["+tracker+"] c3=["+counterstain+"] keep");
-			rename("Merge");
+			run("Mean...", "radius=5");
+			run("Find Maxima...", "prominence=100 output=[Point Selection]");
+			run("Flatten");
+			rename("3 - Tracker_Count");
+			//close
+			close("Nuclei");
+			close("Nuclei_8-bit");
+			close("Monolayer");
+			close("Background");
+			close("Monolayer_no-nuclei");
+			close("Find_Maxima");
+			close(counterstain);
+			close(tracker);
+			//Make Montage
+			run("Images to Stack", "name=Stack title=[] use");
 			waitForUser("Click OK to exit");
 			run("Close All");
 			Dialog.create("Test Mode");
