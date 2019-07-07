@@ -380,7 +380,19 @@ macro "NC-Adh" {
 			exit("There is no well selected");
 		}
 
-
+		//start
+		for (i=0; i<nWells; i++) {
+			if (fileCheckbox[i]) {
+				for (j=0; j<fieldName.length; j++) {
+					counterstain=wellName[i]+"(fld "+fieldName[j]+" wv "+channels[0]+ " - "+channels[0]+").tif";
+					tracker=wellName[i]+"(fld "+fieldName[j]+" wv "+channels[1]+ " - "+channels[1]+").tif";
+					open(dir+File.separator+counterstain);
+					open(dir+File.separator+tracker);
+					waitForUser("Hodor");
+					run("Close All");
+				}
+			}
+		}
 
 		
 		//results table
