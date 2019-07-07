@@ -263,6 +263,7 @@ macro "NC-Adh" {
 			field=Dialog.getChoice();
 			counterstain=well+"(fld "+field+" wv "+channels[0]+ " - "+channels[0]+").tif";
 			tracker=well+"(fld "+field+" wv "+channels[1]+ " - "+channels[1]+").tif";
+			setBatchMode(true);
 			//Merge
 			open(dir+File.separator+counterstain);
 			run("Duplicate...", "title=Nuclei");
@@ -299,10 +300,11 @@ macro "NC-Adh" {
 			run("8-bit");
 			run("Subtract Background...", "rolling=100");
 			run("Enhance Contrast...", "saturated=0.1 normalize");
-			run("Mean...", "radius=5");
-			run("Find Maxima...", "prominence=100 output=[Point Selection]");
-			run("Flatten");
-			rename("3 - Tracker_Count");
+			//run("Mean...", "radius=5");
+			run("Median...", "radius=15");
+			run("Find Maxima...", "prominence=75 output=List");
+			selectWindow(tracker);
+			run("Duplicate...", "title=tracker_final");
 			//close
 			close("Nuclei");
 			close("Nuclei_8-bit");
@@ -312,10 +314,25 @@ macro "NC-Adh" {
 			close("Find_Maxima");
 			close(counterstain);
 			close(tracker);
-			//Make Montage
+			//Stack
 			run("Images to Stack", "name=Stack title=[] use");
+			setBatchMode(false);
+			x=newArray(nResults);
+			y=newArray(nResults);
+			run("Select None");
+			for (i=0; i<x.length; i++) {
+				x[i]=getResult("X", i);
+				y[i]=getResult("Y", i);
+				makePoint(x[i], y[i], "large cyan dot");
+				roiManager("Add");
+			}
+			roiManager("Show All");
 			waitForUser("Click OK to exit");
 			run("Close All");
+			selectWindow("ROI Manager");
+			run("Close");
+			selectWindow("Results");
+			run("Close");
 			Dialog.create("Test Mode");
 			Dialog.addRadioButtonGroup("Test other field-of-view:", radioButtonItems, 1, 2, radioButtonItems[0]);
 			Dialog.show();
