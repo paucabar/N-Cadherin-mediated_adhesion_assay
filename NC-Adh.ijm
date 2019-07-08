@@ -396,7 +396,7 @@ macro "NC-Adh" {
 					run("Set Measurements...", "area_fraction display redirect=None decimal=2");
 					setThreshold(255, 255);
 					run("Measure");
-					result=getResult("%Area", 0);
+					satPixelFraction=getResult("%Area", 0);
 					run("Clear Results");
 					
 					//quality control: no content
@@ -406,12 +406,16 @@ macro "NC-Adh" {
 					run("Subtract Background...", "rolling=50");
 					run("Enhance Contrast...", "saturated=0.4 normalize");
 					run("Find Maxima...", "noise=75 output=[Count]");
-					result=getResult("Count", 0);
+					maxCount=getResult("Count", 0);
 					run("Clear Results");
 					
-					//quality control: monolayer
+					//quality control & measurements: monolayer
 					selectImage(counterstain);
 					run("Duplicate...", "title=QC_monolayer");
+					run("Set Measurements...", "area display redirect=None decimal=2");
+					run("Measure");
+					area=getResult("Area", 0);
+					run("Clear Results");
 					run("Enhance Contrast...", "saturated=0.1 normalize");
 					run("Mean...", "radius=2");
 					run("Median...", "radius=10");
@@ -419,10 +423,11 @@ macro "NC-Adh" {
 					run("Convert to Mask");
 					resetThreshold();
 					run("Options...", "iterations=50 count=1 do=Dilate");
-					run("Set Measurements...", "area area_fraction display redirect=None decimal=2");
+					run("Set Measurements...", "area_fraction display redirect=None decimal=2");
 					setThreshold(255, 255);
 					run("Measure");
-					result=getResult("%Area", 0);
+					areaFraction=getResult("%Area", 0)/100;
+					monolayerArea=area*areaFraction;
 					run("Clear Results");
 					//waitForUser("Hodor");
 					run("Close All");
