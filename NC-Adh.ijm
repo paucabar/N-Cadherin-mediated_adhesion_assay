@@ -388,6 +388,7 @@ macro "NC-Adh" {
 					tracker=wellName[i]+"(fld "+fieldName[j]+" wv "+channels[1]+ " - "+channels[1]+").tif";
 					open(dir+File.separator+counterstain);
 					open(dir+File.separator+tracker);
+					
 					//quality control: debris
 					selectImage(counterstain);
 					run("Duplicate...", "title=QC_sat");
@@ -397,6 +398,7 @@ macro "NC-Adh" {
 					run("Measure");
 					result=getResult("%Area", 0);
 					run("Clear Results");
+					
 					//quality control: no content
 					selectImage(counterstain);
 					run("Duplicate...", "title=QC_nc");
@@ -405,6 +407,22 @@ macro "NC-Adh" {
 					run("Enhance Contrast...", "saturated=0.4 normalize");
 					run("Find Maxima...", "noise=75 output=[Count]");
 					result=getResult("Count", 0);
+					run("Clear Results");
+					
+					//quality control: monolayer
+					selectImage(counterstain);
+					run("Duplicate...", "title=QC_monolayer");
+					run("Enhance Contrast...", "saturated=0.1 normalize");
+					run("Mean...", "radius=2");
+					run("Median...", "radius=10");
+					setAutoThreshold("Triangle dark");
+					run("Convert to Mask");
+					resetThreshold();
+					run("Options...", "iterations=50 count=1 do=Dilate");
+					run("Set Measurements...", "area area_fraction display redirect=None decimal=2");
+					setThreshold(255, 255);
+					run("Measure");
+					result=getResult("%Area", 0);
 					run("Clear Results");
 					//waitForUser("Hodor");
 					run("Close All");
