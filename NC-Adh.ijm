@@ -388,7 +388,16 @@ macro "NC-Adh" {
 					tracker=wellName[i]+"(fld "+fieldName[j]+" wv "+channels[1]+ " - "+channels[1]+").tif";
 					open(dir+File.separator+counterstain);
 					open(dir+File.separator+tracker);
-					waitForUser("Hodor");
+					//quality control: debris
+					selectImage(counterstain);
+					run("Duplicate...", "title=QC_sat");
+					run("8-bit");
+					run("Set Measurements...", "area_fraction display redirect=None decimal=2");
+					setThreshold(255, 255);
+					run("Measure");
+					result=getResult("%Area", 0);
+					run("Clear Results");
+					//waitForUser("Hodor");
 					run("Close All");
 				}
 			}
