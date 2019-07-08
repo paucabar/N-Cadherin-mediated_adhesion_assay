@@ -381,11 +381,29 @@ macro "NC-Adh" {
 		}
 
 		//start
+		resultsLength=checkSelection*fieldsxwell;
+		row=newArray(resultsLength);
+		column=newArray(resultsLength);
+		field=newArray(resultsLength);
+		satPix=newArray(resultsLength);
+		satPixClass=newArray(resultsLength);
+		maxCount=newArray(resultsLength);
+		noContClass=newArray(resultsLength);
+		totalArea=newArray(resultsLength);
+		areaFraction=newArray(resultsLength);
+		monolayerArea=newArray(resultsLength);
+		monoAreaClass=newArray(resultsLength);
+		trackerCount=newArray(resultsLength);
+		count=0;
+		setBatchMode(true);
 		for (i=0; i<nWells; i++) {
 			if (fileCheckbox[i]) {
 				for (j=0; j<fieldName.length; j++) {
 					counterstain=wellName[i]+"(fld "+fieldName[j]+" wv "+channels[0]+ " - "+channels[0]+").tif";
 					tracker=wellName[i]+"(fld "+fieldName[j]+" wv "+channels[1]+ " - "+channels[1]+").tif";
+					row[count]=substring(wellName[i], 0, 1);
+					column[count]=substring(wellName[i], 4, 6);
+					field[count]=fieldName[j];
 					open(dir+File.separator+counterstain);
 					open(dir+File.separator+tracker);
 					
@@ -396,8 +414,13 @@ macro "NC-Adh" {
 					run("Set Measurements...", "area_fraction display redirect=None decimal=2");
 					setThreshold(255, 255);
 					run("Measure");
-					satPixelFraction=getResult("%Area", 0);
+					satPix[count]=getResult("%Area", 0);
 					run("Clear Results");
+					if (satPix[count]>=0.01) {
+						satPixClass[count]=true;
+					} else {
+						satPixClass[count]=false;
+					}
 					
 					//quality control: no content
 					selectImage(counterstain);
@@ -406,15 +429,20 @@ macro "NC-Adh" {
 					run("Subtract Background...", "rolling=50");
 					run("Enhance Contrast...", "saturated=0.4 normalize");
 					run("Find Maxima...", "noise=75 output=[Count]");
-					maxCount=getResult("Count", 0);
+					maxCount[count]=getResult("Count", 0);
 					run("Clear Results");
+					if (maxCount[count]>=1000) {
+						noContClass[count]=true;
+					} else {
+						noContClass[count]=false;
+					}
 					
 					//quality control & measurements: monolayer
 					selectImage(counterstain);
 					run("Duplicate...", "title=QC_monolayer");
 					run("Set Measurements...", "area display redirect=None decimal=2");
 					run("Measure");
-					area=getResult("Area", 0);
+					totalArea[count]=getResult("Area", 0);
 					run("Clear Results");
 					run("Enhance Contrast...", "saturated=0.1 normalize");
 					run("Mean...", "radius=2");
@@ -426,22 +454,37 @@ macro "NC-Adh" {
 					run("Set Measurements...", "area_fraction display redirect=None decimal=2");
 					setThreshold(255, 255);
 					run("Measure");
-					areaFraction=getResult("%Area", 0)/100;
-					monolayerArea=area*areaFraction;
+					areaFraction[count]=getResult("%Area", 0)/100;
+					monolayerArea[count]=totalArea[count]*areaFraction[count];
 					run("Clear Results");
+					if (areaFraction[count]<0.75) {
+						monoAreaClass[count]=true;
+					} else {
+						monoAreaClass[count]=false;
+					}
 					//waitForUser("Hodor");
 					run("Close All");
+					selectWindow("Results");
+					run("Close");
+					count++;
 				}
 			}
 		}
-
+		setBatchMode(false);
 		
 		//results table
-		resultsTable("Results table", channels[2], channels[3], dataname, nucleosideAnalogue, marker1, marker2);
+		title1 = "Results table";
+		title2 = "["+title1+"]";
+		f = title2;
+		run("Table...", "name="+title2+" width=500 height=500");
+		print(f, "\\Headings:n\tRow\tColumn\tField\t%SatPix\tDebris\tMaxCount\tNoCont\tTotalArea\tMonolayerArea\t%MonoArea\tQC monolayer\tTracker");
+		for (i=0; i<resultsLength; i++) {
+			print(f, i+1 + "\t" + row[i]+ "\t" + column[i] + "\t" + field[i] + "\t" + satPix[i] + "\t" + satPixClass[i] + "\t" +maxCount[i] + "\t" + noContClass[i] + "\t" + totalArea[i] + "\t" + monolayerArea[i] + "\t" + areaFraction[i] + "\t" + monoAreaClass[i] + "\t" + trackerCount[i]);
+		}
 		//save as TXT
 		saveAs("txt", outputFolderPath+"\\"+resultsTableName);
 		selectWindow("Results table");
-		run("Close");
+		//run("Close");
 		print("End of process");
 		print("Find the results table at:");
 		print(outputFolderPath);
@@ -461,29 +504,4 @@ macro "NC-Adh" {
 		close(image+"-MaximaFilter");
 		return localMaxima;
 	} //MAXIMAFILTER function ending
-
-	function resultsTable(title, m1, m2, nameArray, nucleosideArray, m1Array, m2Array) { //RESULTSTABLE function beginning
-		title1 = title;
-		title2 = "["+title1+"]";
-		f = title2;
-		run("Table...", "name="+title2+" width=500 height=500");
-		print(f, "\\Headings:n\tImage\tS-phase\t"+m1+"\t"+m2);
-		for (i=0; i<nucleosideArray.length; i++) {
-			print(f, i+1 + "\t" + nameArray[i]+ "\t" + nucleosideArray[i] + "\t" + m1Array[i] + "\t" + m2Array[i]);
-		}
-	} //RESULTSTABLE function ending
-
-	function cleanUp() { //CLEAN-UP function beginning
-		if (isOpen("Results")) {
-			selectWindow("Results");
-			run("Close");
-		}
-		if (isOpen("Threshold")) {
-			selectWindow("Threshold"); 
-			run("Close");
-		}
-		while (nImages()>0) {
-			selectImage(nImages());  
-			run("Close");
-		}
-	} //CLEAN-UP function ending
+}
