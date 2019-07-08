@@ -397,6 +397,15 @@ macro "NC-Adh" {
 					run("Measure");
 					result=getResult("%Area", 0);
 					run("Clear Results");
+					//quality control: no content
+					selectImage(counterstain);
+					run("Duplicate...", "title=QC_nc");
+					run("8-bit");
+					run("Subtract Background...", "rolling=50");
+					run("Enhance Contrast...", "saturated=0.4 normalize");
+					run("Find Maxima...", "noise=75 output=[Count]");
+					result=getResult("Count", 0);
+					run("Clear Results");
 					//waitForUser("Hodor");
 					run("Close All");
 				}
