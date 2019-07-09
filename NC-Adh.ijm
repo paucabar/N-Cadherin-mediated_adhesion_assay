@@ -394,6 +394,7 @@ macro "NC-Adh" {
 		monolayerArea=newArray(resultsLength);
 		monoAreaClass=newArray(resultsLength);
 		trackerCount=newArray(resultsLength);
+		trackerRatio=newArray(resultsLength);
 		count=0;
 		setBatchMode(true);
 		for (i=0; i<nWells; i++) {
@@ -462,7 +463,22 @@ macro "NC-Adh" {
 					} else {
 						monoAreaClass[count]=false;
 					}
-					//waitForUser("Hodor");
+
+					//tracker count
+					selectImage(tracker);
+					run("Point Tool...", "type=Dot color=Magenta size=Large label counter=0");
+					setOption("ScaleConversions", true);
+					run("8-bit");
+					run("Subtract Background...", "rolling=100");
+					run("Enhance Contrast...", "saturated=0.1 normalize");
+					//run("Mean...", "radius=5");
+					run("Median...", "radius=15");
+					run("Find Maxima...", "prominence=75 output=Count");
+					trackerCount[count]=getResult("Count", 0);
+					run("Clear Results");
+					trackerRatio[count]=trackerCount[count]/(monolayerArea[count]*0.000001);
+
+					//close
 					run("Close All");
 					selectWindow("Results");
 					run("Close");
@@ -477,9 +493,9 @@ macro "NC-Adh" {
 		title2 = "["+title1+"]";
 		f = title2;
 		run("Table...", "name="+title2+" width=500 height=500");
-		print(f, "\\Headings:n\tRow\tColumn\tField\t%SatPix\tDebris\tMaxCount\tNoCont\tTotalArea\tMonolayerArea\t%MonoArea\tQC monolayer\tTracker");
+		print(f, "\\Headings:n\tRow\tColumn\tField\t%SatPix\tDebris\tMaxCount\tNoCont\tTotalArea\tMonolayerArea\t%MonoArea\tQC monolayer\tCells\tCells/mm2");
 		for (i=0; i<resultsLength; i++) {
-			print(f, i+1 + "\t" + row[i]+ "\t" + column[i] + "\t" + field[i] + "\t" + satPix[i] + "\t" + satPixClass[i] + "\t" +maxCount[i] + "\t" + noContClass[i] + "\t" + totalArea[i] + "\t" + monolayerArea[i] + "\t" + areaFraction[i] + "\t" + monoAreaClass[i] + "\t" + trackerCount[i]);
+			print(f, i+1 + "\t" + row[i]+ "\t" + column[i] + "\t" + field[i] + "\t" + satPix[i] + "\t" + satPixClass[i] + "\t" +maxCount[i] + "\t" + noContClass[i] + "\t" + totalArea[i] + "\t" + monolayerArea[i] + "\t" + areaFraction[i] + "\t" + monoAreaClass[i] + "\t" + trackerCount[i] + "\t" + trackerRatio[i]);
 		}
 		//save as TXT
 		saveAs("txt", outputFolderPath+"\\"+resultsTableName);
