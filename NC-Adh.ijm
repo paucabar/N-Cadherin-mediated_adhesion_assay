@@ -505,19 +505,4 @@ macro "NC-Adh" {
 		print("Find the results table at:");
 		print(outputFolderPath);
 	}
-
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//User-defined functions
-	
-	function maximaFilter(image) { //MAXIMAFILTER function beginning
-		selectImage(image);
-		run("Duplicate...", "title="+image+"-MaximaFilter");
-		run("Subtract Background...", "rolling=50");
-		run("Enhance Contrast...", "saturated=0.4 normalize");
-		run("Find Maxima...", "noise=100 output=[Count]");
-		localMaxima=getResult("Count", 0);
-		run("Clear Results");
-		close(image+"-MaximaFilter");
-		return localMaxima;
-	} //MAXIMAFILTER function ending
 }
