@@ -3,17 +3,15 @@
  * Authors: Pau Carrillo-Barberà, José M. Morante-Redolat, José F. Pertusa
  * Department of Cellular & Functional Biology
  * University of Valencia (Valencia, Spain)
- * 
- * November 2018
- * Last update: July 07, 2019
  */
 
 macro "NC-Adh" {
 
 //choose a macro mode and a directory
-#@ String (label=" ", value="<html><font size=6><b>High Content</font><br><font color=teal>N-Cadherin-mediated Adhesion</font></b></html>", visibility=MESSAGE, persist=false) heading
+#@ String (label=" ", value="<html><font size=6><b>High Content Analysis</font><br><font color=teal>N-Cadherin-mediated Adhesion</font></b></html>", visibility=MESSAGE, persist=false) heading
 #@ String(label="Select mode:", choices={"Analysis", "Pre-Analysis (parameter tweaking)"}, style="radioButtonVertical") mode
-#@ File(label="Select a directory:", style="directory") dir
+#@ File(label="Select directory:", style="directory") dir
+#@ String (label="<html>Load pre-established<br>parameter dataset:</html>", choices={"No", "Yes"}, style="radioButtonHorizontal") importPD
 #@ String (label=" ", value="<html><img src=\"http://oi64.tinypic.com/ekrmvs.jpg\"></html>", visibility=MESSAGE, persist=false) logo
 #@ String (label=" ", value="<html><font size=2><b>Neuromolecular Biology Lab</b><br>ERI BIOTECMED, Universitat de València (Valencia, Spain)</font></html>", visibility=MESSAGE, persist=false) message
 
