@@ -15,6 +15,18 @@ macro "NC-Adh" {
 #@ String (label=" ", value="<html><img src=\"http://oi64.tinypic.com/ekrmvs.jpg\"></html>", visibility=MESSAGE, persist=false) logo
 #@ String (label=" ", value="<html><font size=2><b>Neuromolecular Biology Lab</b><br>ERI BIOTECMED, Universitat de València (Valencia, Spain)</font></html>", visibility=MESSAGE, persist=false) message
 
+	//open pre-established parameter dataset
+	if (importPD=="Yes") {
+		pdPath=File.openDialog("Select a parameter dataset file");
+		parametersString=File.openAsString(pdPath);
+		parameterRows=split(parametersString, "\n");
+		parameters=newArray(parameterRows.length);
+		for(i=0; i<parameters.length; i++) {
+			parameterColumns=split(parameterRows[i],"\t"); 
+			parameters[i]=parameterColumns[1];
+		}
+	}
+
 	//File management
 	if (mode=="Analysis" || mode=="Pre-Analysis (parameter tweaking)") {
 		//Identification of the TIF files
@@ -84,153 +96,124 @@ macro "NC-Adh" {
 			channels[i]=substring(tiffArray[i], index1+3, index2);
 		}
 
-		//‘Pre-Analysis (parameter tweaking)’ and ‘Analysis’ parameterization
-		//browse a parameter dataset file (optional) & define output folder and dataset file names
-		dirName="Output - " + File.getName(dir);
-		resultsName="ResultsTable - " + File.getName(dir);
-		radioButtonItems=newArray("Yes", "No");
-		//‘Input & Output’ dialog box
-		Dialog.create("Input & Output");
-		Dialog.addRadioButtonGroup("Browse a pre-established parameter dataset:", radioButtonItems, 1, 2, "No");
-		Dialog.addMessage("Output folder:");
-		Dialog.addString("", dirName, 40);
-		Dialog.addMessage("Output parameter dataset file (txt):");
-		Dialog.addString("", "parameter_dataset", 40);
-		if(mode=="Analysis") {
-			Dialog.addMessage("Results table:");
-			Dialog.addString("", resultsName, 40);
-		}
-		html = "<html>"
-			+"Having generated a <b><font color=black>parameter dataset</font></b> txt file using the<br>"
-			+"<b><font color=red>Pre-Analysis (parameter tweaking)</font></b> mode it is possible to<br>"
-			+"browse the file to apply the pre-established parameters";
-		Dialog.addHelp(html);
-		Dialog.show()
-		browseDataset=Dialog.getRadioButton();
-		outputFolder=Dialog.getString();
-		datasetFile=Dialog.getString();
-		if(mode=="Analysis") {
-			resultsTableName=Dialog.getString();
-		}
 
 		//set some parameter menu arrays
-		enhanceContrastOptions=newArray("0", "0.1", "0.2", "0.3", "0.4", "None");
 		threshold=getList("threshold.methods");
 
 		//Extract values from a parameter dataset file
-		if(browseDataset=="Yes") {
-			parametersDatasetPath=File.openDialog("Choose the parameter dataset file to Open:");
-			//parameter selection (pre-established)
-			parametersString=File.openAsString(parametersDatasetPath);
-			parameterRows=split(parametersString, "\n");
-			parameters=newArray(parameterRows.length);
-			for(i=0; i<parameters.length; i++) {
-				parameterColumns=split(parameterRows[i],"\t"); 
-				parameters[i]=parameterColumns[1];
-			}
-			channels[0]=parameters[0];
-			channels[1]=parameters[1];
-			rollingCounterstaining=parameters[2];
+		if(importPD=="Yes") {
+			projectName=parameters[0];
+			counterstainingChannel=parameters[1];
+			trackerChannel=parameters[2];
 			enhanceCounterstaining=parameters[3];
-			maximumFilter=parameters[4];
-			gaussianCounterstaining=parameters[5];
-			thresholdMin=parameters[6];
-			thresholdMax=parameters[7];
+			meanCounterstaining=parameters[4];
+			medianCounterstaining=parameters[5];
+			thresholdMethod=parameters[6];
+			dilateIter=parameters[7];
 			rollingTracker=parameters[8];
 			enhanceTracker=parameters[9];
-			medianTracker=parameters[10];
-			meanTracker=parameters[11];
+			meanTracker=parameters[10];
+			medianTracker=parameters[11];
 			noiseToleranceTracker=parameters[12];
+			qcDebris=parameters[13];
+			qcMonolayer=parameters[14];
 		} else {
 			//default parameters
-			rollingCounterstaining=50;
-			enhanceCounterstaining=enhanceContrastOptions[1];
-			maximumFilter=20;
-			gaussianCounterstaining=20;
-			thresholdMin=25;
-			thresholdMax=255;
-			rollingTracker=50;
-			enhanceTracker=enhanceContrastOptions[1];
-			medianTracker=0;
-			meanTracker=10;
+			projectName="Project";
+			counterstainingChannel=channels[0];
+			trackerChannel=channels[0];
+			enhanceCounterstaining=0.1;
+			meanCounterstaining=2;
+			medianCounterstaining=10;
+			thresholdMethod="Triangle";
+			dilateIter=50;
+			rollingTracker=100;
+			enhanceTracker=0.1;
+			meanTracker=0;
+			medianTracker=15;
 			noiseToleranceTracker=75;
+			qcDebris=0.01;
+			qcMonolayer=75;
 		}
 	
 		//'Select Parameters' dialog box
 		//edit parameters
 		title = "Select Parameters";
 		Dialog.create(title);
+		Dialog.addString("Project", projectName, 40);
 		Dialog.setInsets(0, 170, 0);
 		Dialog.addMessage("CHANNEL SELECTION:");
-		Dialog.addChoice("Counterstaining", channels, channels[0]);
-		Dialog.addChoice("Tracker", channels, channels[0]);
+		Dialog.addChoice("Counterstaining", channels, counterstainingChannel);
+		Dialog.addChoice("Tracker", channels, trackerChannel);
 		Dialog.setInsets(0, 170, 0);
-		Dialog.addMessage("MONOLAYER WORKFLOW:");
-		Dialog.addNumber("Subtract Background (rolling)", rollingCounterstaining);
-		Dialog.addChoice("Enhance Contrast", enhanceContrastOptions, enhanceContrastOptions[4]);
-		Dialog.addNumber("Maximum Filter (sigma)", maximumFilter);
-		Dialog.addNumber("Gaussian Blur (sigma)", gaussianCounterstaining);
-		Dialog.addSlider("setThreshold (min)", 0, 255, thresholdMin);
-		Dialog.addSlider("setThreshold (max)", 0, 255, thresholdMax);
+		Dialog.addMessage("MONOLAYER PARAMETERS:");
+		Dialog.addNumber("Saturated pixels (normalize)", enhanceCounterstaining, 1, 3, "%");
+		Dialog.addNumber("Mean (sigma)", meanCounterstaining, 0, 2, "pixels");
+		Dialog.addNumber("Median (sigma)", medianCounterstaining, 0, 2, "pixels");
+		Dialog.addChoice("Threshold method", threshold, thresholdMethod);
+		Dialog.addNumber("Dilate", dilateIter, 0, 3, "iterations");
 		Dialog.setInsets(0, 170, 0);
-		Dialog.addMessage("TRACKER WORKFLOW:");
+		Dialog.addMessage("TRACKER PARAMETERS:");
 		Dialog.addNumber("Subtract Background (rolling)", rollingTracker);
-		Dialog.addChoice("Enhance Contrast", enhanceContrastOptions, enhanceContrastOptions[5]);
-		Dialog.addNumber("Median (sigma)", medianTracker);
-		Dialog.addNumber("Mean (sigma)", meanTracker);
+		Dialog.addNumber("Saturated pixels (normalize)", enhanceTracker, 1, 3, "%");
+		Dialog.addNumber("Mean (sigma)", meanTracker, 0, 2, "pixels");
+		Dialog.addNumber("Median (sigma)", medianTracker, 0, 2, "pixels");
 		Dialog.addSlider("Noise Tolerance", 0, 255, noiseToleranceTracker);
+		Dialog.setInsets(0, 170, 0);
+		Dialog.addMessage("QUALITY CONTROL PARAMETERS:");
+		Dialog.addNumber("Debris", qcDebris, 2, 4, "% saturated pixels");
+		Dialog.addSlider("monolayer %", 0, 100, qcMonolayer);
 		Dialog.show()
-		channels[0]=Dialog.getChoice();
-		channels[1]=Dialog.getChoice();
-		rollingCounterstaining=Dialog.getNumber();
-		enhanceCounterstaining=Dialog.getChoice();
-		maximumFilter=Dialog.getNumber();
-		gaussianCounterstaining=Dialog.getNumber();
-		thresholdMin=Dialog.getNumber();
-		thresholdMax=Dialog.getNumber();
+		projectName=Dialog.getString();
+		counterstainingChannel=Dialog.getChoice();
+		trackerChannel=Dialog.getChoice();
+		enhanceCounterstaining=Dialog.getNumber();
+		meanCounterstaining=Dialog.getNumber();
+		medianCounterstaining=Dialog.getNumber();
+		thresholdMethod=Dialog.getChoice();
+		dilateIter=Dialog.getNumber();
 		rollingTracker=Dialog.getNumber();
-		enhanceTracker=Dialog.getChoice();
-		medianTracker=Dialog.getNumber();
+		enhanceTracker=Dialog.getNumber();
 		meanTracker=Dialog.getNumber();
+		medianTracker=Dialog.getNumber();
 		noiseToleranceTracker=Dialog.getNumber();
+		qcDebris=Dialog.getNumber();
+		qcMonolayer=Dialog.getNumber();
 	
 		//check the parameter selection
-		if(channels[0]==channels[1]) {
+		if(counterstainingChannel==trackerChannel) {
 			beep();
-			exit("Counterstaining ["+channels[0]+"] and Tracker ["+channels[1]+"] channels can not be the same")
-		} else if (thresholdMin>thresholdMax) {
-			beep();
-			exit("setThreshold(min) ["+thresholdMin+"] must be greater than ["+thresholdMax+"]")
+			exit("Counterstaining ["+counterstainingChannel+"] and Tracker ["+trackerChannel+"] channels can not be the same")
 		}
-
-		//Create an output folder
-		outputFolderPath=dir+"\\"+outputFolder;
-		File.makeDirectory(outputFolderPath);
 		
 		//Create a parameter dataset file
 		title1 = "Parameter dataset";
 		title2 = "["+title1+"]";
 		f = title2;
 		run("Table...", "name="+title2+" width=500 height=500");
-		print(f, "Nuclei\t" + channels[0]);
-		print(f, "Nucleoside analogue\t" + channels[1]);
-		print(f, "Rolling (counterstaining)\t" + rollingCounterstaining);
+		print(f, "Project\t" + projectName);
+		print(f, "Counterstaining channel\t" + counterstainingChannel);
+		print(f, "Tracker channel\t" + trackerChannel);
 		print(f, "Enhance (counterstaining)\t" + enhanceCounterstaining);
-		print(f, "Maximum (counterstaining)\t" + maximumFilter);
-		print(f, "Gaussian (counterstaining)\t" + gaussianCounterstaining);
-		print(f, "setThreshold_min (counterstaining)\t" + thresholdMin);
-		print(f, "setThreshold_max (counterstaining)\t" + thresholdMax);
+		print(f, "Mean (counterstaining)\t" + meanCounterstaining);
+		print(f, "Median (counterstaining)\t" + medianCounterstaining);
+		print(f, "Threshold method\t" + thresholdMethod);
+		print(f, "Dilate (iterations)\t" + dilateIter);
 		print(f, "Rolling (tracker)\t" + rollingTracker);
 		print(f, "Enhance (tracker)\t" + enhanceTracker);
-		print(f, "Median (tracker)\t" + medianTracker);
 		print(f, "Mean (tracker)\t" + meanTracker);
+		print(f, "Median (tracker)\t" + medianTracker);
 		print(f, "Noise tolerance (tracker)\t" + noiseToleranceTracker);
+		print(f, "QC (debris)\t" + qcDebris);
+		print(f, "QC (monolayer)\t" + qcMonolayer);
 
-		//save as TXT
-		saveAs("txt", outputFolderPath+"\\"+datasetFile);
+		//save as txt
+		saveAs("txt", dir+"\\"+projectName);
 		selectWindow(title1);
 		run("Close");
-	
+
+		exit()
+		
 		//create an array containing the well codes
 		for (i=0; i<nWells; i++) {
 			wellName[i]=well[i*imagesxwell];
