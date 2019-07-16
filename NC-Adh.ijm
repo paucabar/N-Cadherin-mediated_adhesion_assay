@@ -250,6 +250,7 @@ macro "NC-Adh" {
 			run("8-bit");
 			open(dir+File.separator+tracker);
 			run("Duplicate...", "title=Find_Maxima");
+			run("Duplicate...", "title=Maxima_Filter");
 			selectImage(counterstain);
 			run("Enhance Contrast...", "saturated=0.1 normalize");
 			selectImage(tracker);
@@ -273,6 +274,14 @@ macro "NC-Adh" {
 			run("Merge Channels...", "c3=Background c2=Monolayer_no-nuclei c4=[Nuclei_8-bit] keep");
 			rename("2 - M/B");
 			//Tracker-labeled cells
+			selectWindow("Maxima_Filter");
+			run("8-bit");
+			run("Subtract Background...", "rolling=50");
+			run("Enhance Contrast...", "saturated=0.4 normalize");
+			run("Find Maxima...", "prominence=75 output=Count");
+			maxFilterTracker=getResult("Count", 0);
+			run("Select None");
+			run("Clear Results");
 			selectWindow("Find_Maxima");
 			run("Point Tool...", "type=Dot color=Magenta size=Large label counter=0");
 			setOption("ScaleConversions", true);
@@ -291,6 +300,7 @@ macro "NC-Adh" {
 			close("Background");
 			close("Monolayer_no-nuclei");
 			close("Find_Maxima");
+			close("Maxima_Filter");
 			close(counterstain);
 			close(tracker);
 			//Stack
@@ -299,19 +309,23 @@ macro "NC-Adh" {
 			x=newArray(nResults);
 			y=newArray(nResults);
 			run("Select None");
-			for (i=0; i<x.length; i++) {
-				x[i]=getResult("X", i);
-				y[i]=getResult("Y", i);
-				makePoint(x[i], y[i], "large cyan dot");
-				roiManager("Add");
+			if (maxFilterTracker<1000) {
+				for (i=0; i<x.length; i++) {
+					x[i]=getResult("X", i);
+					y[i]=getResult("Y", i);
+					makePoint(x[i], y[i], "large cyan dot");
+					roiManager("Add");
+				}
+				roiManager("Show All");
 			}
-			roiManager("Show All");
-			waitForUser("Click OK to exit");
-			run("Close All");
-			selectWindow("ROI Manager");
-			run("Close");
 			selectWindow("Results");
 			run("Close");
+			waitForUser("Click OK to exit");
+			run("Close All");
+			if (isOpen("ROI Manager")) {
+				selectWindow("ROI Manager");
+				run("Close");
+			}
 			radioButtonItems=newArray("Yes", "No");
 			Dialog.create("Test Mode");
 			Dialog.addRadioButtonGroup("Test other field-of-view:", radioButtonItems, 1, 2, radioButtonItems[0]);
