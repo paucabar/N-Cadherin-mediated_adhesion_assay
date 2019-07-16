@@ -162,7 +162,7 @@ macro "NC-Adh" {
 		Dialog.setInsets(0, 170, 0);
 		Dialog.addMessage("QUALITY CONTROL PARAMETERS:");
 		Dialog.addNumber("Debris", qcDebris, 2, 4, "% saturated pixels");
-		Dialog.addSlider("monolayer %", 0, 100, qcMonolayer);
+		Dialog.addSlider("Monolayer %", 0, 100, qcMonolayer);
 		Dialog.show()
 		projectName=Dialog.getString();
 		counterstainingChannel=Dialog.getChoice();
@@ -211,8 +211,6 @@ macro "NC-Adh" {
 		saveAs("txt", dir+"\\"+projectName);
 		selectWindow(title1);
 		run("Close");
-
-		exit()
 		
 		//create an array containing the well codes
 		for (i=0; i<nWells; i++) {
@@ -242,8 +240,8 @@ macro "NC-Adh" {
 			Dialog.show();
 			well=Dialog.getChoice();
 			field=Dialog.getChoice();
-			counterstain=well+"(fld "+field+" wv "+channels[0]+ " - "+channels[0]+").tif";
-			tracker=well+"(fld "+field+" wv "+channels[1]+ " - "+channels[1]+").tif";
+			counterstain=well+"(fld "+field+" wv "+counterstainingChannel+ " - "+counterstainingChannel+").tif";
+			tracker=well+"(fld "+field+" wv "+trackerChannel+ " - "+trackerChannel+").tif";
 			setBatchMode(true);
 			//Merge
 			open(dir+File.separator+counterstain);
@@ -260,14 +258,14 @@ macro "NC-Adh" {
 			rename("1 - Merge");
 			//Monolayer
 			selectImage("Nuclei");
-			run("Enhance Contrast...", "saturated=0.1 normalize");
-			run("Mean...", "radius=2");
-			run("Median...", "radius=10");
-			setAutoThreshold("Triangle dark");
+			run("Enhance Contrast...", "saturated="+enhanceCounterstaining+" normalize");
+			run("Mean...", "radius="+meanCounterstaining);
+			run("Median...", "radius="+medianCounterstaining);
+			setAutoThreshold(thresholdMethod+" dark");
 			run("Convert to Mask");
 			resetThreshold();
 			run("Duplicate...", "title=Monolayer");
-			run("Options...", "iterations=50 count=1 do=Dilate");
+			run("Options...", "iterations="+dilateIter+" count=1 do=Dilate");
 			run("Duplicate...", "title=Background");
 			run("Invert");
 			imageCalculator("XOR create", "Nuclei","Monolayer");
@@ -279,11 +277,11 @@ macro "NC-Adh" {
 			run("Point Tool...", "type=Dot color=Magenta size=Large label counter=0");
 			setOption("ScaleConversions", true);
 			run("8-bit");
-			run("Subtract Background...", "rolling=100");
-			run("Enhance Contrast...", "saturated=0.1 normalize");
-			//run("Mean...", "radius=5");
-			run("Median...", "radius=15");
-			run("Find Maxima...", "prominence=75 output=List");
+			run("Subtract Background...", "rolling="+rollingTracker);
+			run("Enhance Contrast...", "saturated="+enhanceTracker+" normalize");
+			run("Mean...", "radius="+meanTracker);
+			run("Median...", "radius="+medianTracker);
+			run("Find Maxima...", "prominence="+noiseToleranceTracker+" output=List");
 			selectWindow(tracker);
 			run("Duplicate...", "title=tracker_final");
 			//close
@@ -314,6 +312,7 @@ macro "NC-Adh" {
 			run("Close");
 			selectWindow("Results");
 			run("Close");
+			radioButtonItems=newArray("Yes", "No");
 			Dialog.create("Test Mode");
 			Dialog.addRadioButtonGroup("Test other field-of-view:", radioButtonItems, 1, 2, radioButtonItems[0]);
 			Dialog.show();
@@ -381,8 +380,8 @@ macro "NC-Adh" {
 		for (i=0; i<nWells; i++) {
 			if (fileCheckbox[i]) {
 				for (j=0; j<fieldName.length; j++) {
-					counterstain=wellName[i]+"(fld "+fieldName[j]+" wv "+channels[0]+ " - "+channels[0]+").tif";
-					tracker=wellName[i]+"(fld "+fieldName[j]+" wv "+channels[1]+ " - "+channels[1]+").tif";
+					counterstain=wellName[i]+"(fld "+fieldName[j]+" wv "+counterstainingChannel+ " - "+counterstainingChannel+").tif";
+					tracker=wellName[i]+"(fld "+fieldName[j]+" wv "+trackerChannel+ " - "+trackerChannel+").tif";
 					row[count]=substring(wellName[i], 0, 1);
 					column[count]=substring(wellName[i], 4, 6);
 					field[count]=fieldName[j];
@@ -398,7 +397,7 @@ macro "NC-Adh" {
 					run("Measure");
 					satPix[count]=getResult("%Area", 0);
 					run("Clear Results");
-					if (satPix[count]>=0.01) {
+					if (satPix[count]>=qcDebris) {
 						satPixClass[count]=true;
 					} else {
 						satPixClass[count]=false;
@@ -426,20 +425,20 @@ macro "NC-Adh" {
 					run("Measure");
 					totalArea[count]=getResult("Area", 0);
 					run("Clear Results");
-					run("Enhance Contrast...", "saturated=0.1 normalize");
-					run("Mean...", "radius=2");
-					run("Median...", "radius=10");
-					setAutoThreshold("Triangle dark");
+					run("Enhance Contrast...", "saturated="+enhanceCounterstaining+" normalize");
+					run("Mean...", "radius="+meanCounterstaining);
+					run("Median...", "radius="+medianCounterstaining);
+					setAutoThreshold(thresholdMethod+" dark");
 					run("Convert to Mask");
 					resetThreshold();
-					run("Options...", "iterations=50 count=1 do=Dilate");
+					run("Options...", "iterations="+dilateIter+" count=1 do=Dilate");
 					run("Set Measurements...", "area_fraction display redirect=None decimal=2");
 					setThreshold(255, 255);
 					run("Measure");
 					areaFraction[count]=getResult("%Area", 0)/100;
 					monolayerArea[count]=totalArea[count]*areaFraction[count];
 					run("Clear Results");
-					if (areaFraction[count]<0.75) {
+					if (areaFraction[count]<qcMonolayer) {
 						monoAreaClass[count]=true;
 					} else {
 						monoAreaClass[count]=false;
@@ -450,11 +449,11 @@ macro "NC-Adh" {
 					run("Point Tool...", "type=Dot color=Magenta size=Large label counter=0");
 					setOption("ScaleConversions", true);
 					run("8-bit");
-					run("Subtract Background...", "rolling=100");
-					run("Enhance Contrast...", "saturated=0.1 normalize");
-					//run("Mean...", "radius=5");
-					run("Median...", "radius=15");
-					run("Find Maxima...", "prominence=75 output=Count");
+					run("Subtract Background...", "rolling="+rollingTracker);
+					run("Enhance Contrast...", "saturated="+enhanceTracker+" normalize");
+					run("Mean...", "radius="+meanTracker);
+					run("Median...", "radius="+medianTracker);
+					run("Find Maxima...", "prominence="+noiseToleranceTracker+" output=Count");
 					trackerCount[count]=getResult("Count", 0);
 					run("Clear Results");
 					trackerRatio[count]=trackerCount[count]/(monolayerArea[count]*0.000001);
