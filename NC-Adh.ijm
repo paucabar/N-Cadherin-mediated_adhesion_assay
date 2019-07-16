@@ -449,7 +449,7 @@ macro "NC-Adh" {
 					run("Set Measurements...", "area_fraction display redirect=None decimal=2");
 					setThreshold(255, 255);
 					run("Measure");
-					areaFraction[count]=getResult("%Area", 0)/100;
+					areaFraction[count]=getResult("%Area", 0);
 					monolayerArea[count]=totalArea[count]*areaFraction[count];
 					run("Clear Results");
 					if (areaFraction[count]<qcMonolayer) {
@@ -463,6 +463,8 @@ macro "NC-Adh" {
 					run("Point Tool...", "type=Dot color=Magenta size=Large label counter=0");
 					setOption("ScaleConversions", true);
 					run("8-bit");
+					run("Duplicate...", "title=Maxima_Filter");
+					selectWindow(tracker);
 					run("Subtract Background...", "rolling="+rollingTracker);
 					run("Enhance Contrast...", "saturated="+enhanceTracker+" normalize");
 					run("Mean...", "radius="+meanTracker);
@@ -470,6 +472,16 @@ macro "NC-Adh" {
 					run("Find Maxima...", "prominence="+noiseToleranceTracker+" output=Count");
 					trackerCount[count]=getResult("Count", 0);
 					run("Clear Results");
+					selectWindow("Maxima_Filter");
+					run("Subtract Background...", "rolling=50");
+					run("Enhance Contrast...", "saturated=0.4 normalize");
+					run("Find Maxima...", "prominence=75 output=Count");
+					maxFilterTracker=getResult("Count", 0);
+					run("Select None");
+					run("Clear Results");
+					if (maxFilterTracker>=1000) {
+						trackerCount[count]=0;
+					}
 					trackerRatio[count]=trackerCount[count]/(monolayerArea[count]*0.000001);
 
 					//close
@@ -492,7 +504,7 @@ macro "NC-Adh" {
 			print(f, i+1 + "\t" + row[i]+ "\t" + column[i] + "\t" + field[i] + "\t" + satPix[i] + "\t" + satPixClass[i] + "\t" +maxCount[i] + "\t" + noContClass[i] + "\t" + totalArea[i] + "\t" + monolayerArea[i] + "\t" + areaFraction[i] + "\t" + monoAreaClass[i] + "\t" + trackerCount[i] + "\t" + trackerRatio[i]);
 		}
 		//save as TXT
-		saveAs("txt", outputFolderPath+"\\"+resultsTableName);
+		saveAs("txt", dir+File.separator+"ResultsTable_"+projectName);
 		selectWindow("Results table");
 		//run("Close");
 		print("End of process");
