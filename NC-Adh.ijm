@@ -391,9 +391,11 @@ macro "NC-Adh" {
 		trackerRatio=newArray(resultsLength);
 		count=0;
 		setBatchMode(true);
+		print("Running analysis");
 		for (i=0; i<nWells; i++) {
 			if (fileCheckbox[i]) {
 				for (j=0; j<fieldName.length; j++) {
+					print(wellName[i]+" (fld " +fieldName[j] + ") " + count+1+"/"+resultsLength);
 					counterstain=wellName[i]+"(fld "+fieldName[j]+" wv "+counterstainingChannel+ " - "+counterstainingChannel+").tif";
 					tracker=wellName[i]+"(fld "+fieldName[j]+" wv "+trackerChannel+ " - "+trackerChannel+").tif";
 					row[count]=substring(wellName[i], 0, 1);
@@ -508,7 +510,5 @@ macro "NC-Adh" {
 		selectWindow("Results table");
 		//run("Close");
 		print("End of process");
-		print("Find the results table at:");
-		print(outputFolderPath);
 	}
 }
