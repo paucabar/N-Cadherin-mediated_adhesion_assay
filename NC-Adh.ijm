@@ -277,7 +277,7 @@ macro "NC-Adh" {
 			selectWindow("Maxima_Filter");
 			run("8-bit");
 			run("Subtract Background...", "rolling=50");
-			run("Enhance Contrast...", "saturated=0.4 normalize");
+			run("Enhance Contrast...", "saturated=0.1 normalize");
 			run("Find Maxima...", "prominence=75 output=Count");
 			maxFilterTracker=getResult("Count", 0);
 			run("Select None");
@@ -476,7 +476,7 @@ macro "NC-Adh" {
 					run("Clear Results");
 					selectWindow("Maxima_Filter");
 					run("Subtract Background...", "rolling=50");
-					run("Enhance Contrast...", "saturated=0.4 normalize");
+					run("Enhance Contrast...", "saturated=0.1 normalize");
 					run("Find Maxima...", "prominence=75 output=Count");
 					maxFilterTracker=getResult("Count", 0);
 					run("Select None");
