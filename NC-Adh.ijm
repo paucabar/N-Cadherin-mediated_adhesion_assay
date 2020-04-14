@@ -1,11 +1,11 @@
 /*
- * Cell_proliferationHCS
- * Authors: Pau Carrillo-Barberà, José M. Morante-Redolat, José F. Pertusa
+ * Cell_Adhesion_Assay
+ * Authors: Pau Carrillo-Barberà
  * Department of Cellular & Functional Biology
  * University of Valencia (Valencia, Spain)
  */
 
-macro "NC-Adh" {
+macro "Cell_Adhesion" {
 
 //choose a macro mode and a directory
 #@ String (label=" ", value="<html><font size=6><b>High Content Analysis</font><br><font color=teal>N-Cadherin-mediated Adhesion</font></b></html>", visibility=MESSAGE, persist=false) heading
