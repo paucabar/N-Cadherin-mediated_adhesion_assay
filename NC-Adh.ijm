@@ -509,7 +509,7 @@ macro "Cell_Adhesion" {
 			print(f, i+1 + "\t" + row[i]+ "\t" + column[i] + "\t" + field[i] + "\t" + mean_std_ratio[i] + "\t" + satPix[i] + "\t" + satPixClass[i] + "\t" +maxCount[i] + "\t" + noContClass[i] + "\t" + totalArea[i] + "\t" + monolayerArea[i] + "\t" + areaFraction[i] + "\t" + monoAreaClass[i] + "\t" + trackerCount[i] + "\t" + trackerRatio[i]);
 		}
 		//save as TXT
-		saveAs("txt", dir+File.separator+"ResultsTable_"+projectName);
+		saveAs("Text", dir+File.separator+"ResultsTable_"+projectName+".csv");
 		selectWindow("Results table");
 		//run("Close");
 		print("End of process");
