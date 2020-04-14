@@ -8,11 +8,11 @@
 macro "Cell_Adhesion" {
 
 //choose a macro mode and a directory
-#@ String (label=" ", value="<html><font size=6><b>High Content Analysis</font><br><font color=teal>N-Cadherin-mediated Adhesion</font></b></html>", visibility=MESSAGE, persist=false) heading
+#@ String (label=" ", value="<html><font size=6><b>High Throughput Analysis</font><br><font color=teal>Cell Adhesion Assay</font></b></html>", visibility=MESSAGE, persist=false) heading
 #@ String(label="Select mode:", choices={"Analysis", "Pre-Analysis (parameter tweaking)"}, style="radioButtonVertical") mode
 #@ File(label="Select directory:", style="directory") dir
 #@ String (label="<html>Load pre-established<br>parameter dataset:</html>", choices={"No", "Yes"}, style="radioButtonHorizontal") importPD
-#@ String (label=" ", value="<html><img src=\"http://oi64.tinypic.com/ekrmvs.jpg\"></html>", visibility=MESSAGE, persist=false) logo
+#@ String (label=" ", value="<html><img src=\"https://live.staticflickr.com/65535/48557333566_d2a51be746_o.png\"></html>", visibility=MESSAGE, persist=false) logo
 #@ String (label=" ", value="<html><font size=2><b>Neuromolecular Biology Lab</b><br>ERI BIOTECMED, Universitat de València (Valencia, Spain)</font></html>", visibility=MESSAGE, persist=false) message
 
 	//open pre-established parameter dataset
