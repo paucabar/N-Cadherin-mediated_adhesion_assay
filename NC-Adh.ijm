@@ -379,6 +379,7 @@ macro "Cell_Adhesion" {
 		row=newArray(resultsLength);
 		column=newArray(resultsLength);
 		field=newArray(resultsLength);
+		mean_std_ratio=newArray(resultsLength);
 		satPix=newArray(resultsLength);
 		satPixClass=newArray(resultsLength);
 		maxCount=newArray(resultsLength);
@@ -403,6 +404,10 @@ macro "Cell_Adhesion" {
 					field[count]=fieldName[j];
 					open(dir+File.separator+counterstain);
 					open(dir+File.separator+tracker);
+					
+					//quality control: blurring
+					getStatistics(areaImage, meanImage, minImage, maxImage, stdImage, histogramImage);
+					mean_std_ratio[count]=meanImage/stdImage;
 					
 					//quality control: debris
 					selectImage(counterstain);
@@ -437,9 +442,7 @@ macro "Cell_Adhesion" {
 					//quality control & measurements: monolayer
 					selectImage(counterstain);
 					run("Duplicate...", "title=QC_monolayer");
-					run("Set Measurements...", "area display redirect=None decimal=2");
-					run("Measure");
-					totalArea[count]=getResult("Area", 0);
+					totalArea[count]=areaImage;
 					run("Clear Results");
 					run("Enhance Contrast...", "saturated="+enhanceCounterstaining+" normalize");
 					run("Mean...", "radius="+meanCounterstaining);
@@ -501,9 +504,9 @@ macro "Cell_Adhesion" {
 		title2 = "["+title1+"]";
 		f = title2;
 		run("Table...", "name="+title2+" width=500 height=500");
-		print(f, "\\Headings:n\tRow\tColumn\tField\t%SatPix\tDebris\tMaxCount\tNoCont\tTotalArea\tMonolayerArea\t%MonoArea\tQC monolayer\tCells\tCells/mm2");
+		print(f, "\\Headings:n\tRow\tColumn\tField\tMean/s.d.\t%SatPix\tDebris\tMaxCount\tNoCont\tTotalArea\tMonolayerArea\t%MonoArea\tQC monolayer\tCells\tCells/mm2");
 		for (i=0; i<resultsLength; i++) {
-			print(f, i+1 + "\t" + row[i]+ "\t" + column[i] + "\t" + field[i] + "\t" + satPix[i] + "\t" + satPixClass[i] + "\t" +maxCount[i] + "\t" + noContClass[i] + "\t" + totalArea[i] + "\t" + monolayerArea[i] + "\t" + areaFraction[i] + "\t" + monoAreaClass[i] + "\t" + trackerCount[i] + "\t" + trackerRatio[i]);
+			print(f, i+1 + "\t" + row[i]+ "\t" + column[i] + "\t" + field[i] + "\t" + mean_std_ratio[i] + "\t" + satPix[i] + "\t" + satPixClass[i] + "\t" +maxCount[i] + "\t" + noContClass[i] + "\t" + totalArea[i] + "\t" + monolayerArea[i] + "\t" + areaFraction[i] + "\t" + monoAreaClass[i] + "\t" + trackerCount[i] + "\t" + trackerRatio[i]);
 		}
 		//save as TXT
 		saveAs("txt", dir+File.separator+"ResultsTable_"+projectName);
