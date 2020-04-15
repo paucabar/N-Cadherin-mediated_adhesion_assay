@@ -115,8 +115,6 @@ macro "Cell_Adhesion" {
 			meanTracker=parameters[10];
 			medianTracker=parameters[11];
 			noiseToleranceTracker=parameters[12];
-			qcDebris=parameters[13];
-			qcMonolayer=parameters[14];
 		} else {
 			//default parameters
 			projectName="Project";
@@ -132,8 +130,6 @@ macro "Cell_Adhesion" {
 			meanTracker=0;
 			medianTracker=15;
 			noiseToleranceTracker=75;
-			qcDebris=0.01;
-			qcMonolayer=75;
 		}
 	
 		//'Select Parameters' dialog box
@@ -160,9 +156,6 @@ macro "Cell_Adhesion" {
 		Dialog.addNumber("Median (sigma)", medianTracker, 0, 2, "pixels");
 		Dialog.addSlider("Noise Tolerance", 0, 255, noiseToleranceTracker);
 		Dialog.setInsets(0, 170, 0);
-		Dialog.addMessage("QUALITY CONTROL PARAMETERS:");
-		Dialog.addNumber("Debris", qcDebris, 2, 4, "% saturated pixels");
-		Dialog.addSlider("Monolayer %", 0, 100, qcMonolayer);
 		Dialog.show()
 		projectName=Dialog.getString();
 		counterstainingChannel=Dialog.getChoice();
@@ -177,8 +170,6 @@ macro "Cell_Adhesion" {
 		meanTracker=Dialog.getNumber();
 		medianTracker=Dialog.getNumber();
 		noiseToleranceTracker=Dialog.getNumber();
-		qcDebris=Dialog.getNumber();
-		qcMonolayer=Dialog.getNumber();
 	
 		//check the parameter selection
 		if(counterstainingChannel==trackerChannel) {
@@ -204,8 +195,6 @@ macro "Cell_Adhesion" {
 		print(f, "Mean (tracker)\t" + meanTracker);
 		print(f, "Median (tracker)\t" + medianTracker);
 		print(f, "Noise tolerance (tracker)\t" + noiseToleranceTracker);
-		print(f, "QC (debris)\t" + qcDebris);
-		print(f, "QC (monolayer)\t" + qcMonolayer);
 
 		//save as txt
 		saveAs("txt", dir+"\\"+projectName);
@@ -381,13 +370,11 @@ macro "Cell_Adhesion" {
 		field=newArray(resultsLength);
 		mean_std_ratio=newArray(resultsLength);
 		satPix=newArray(resultsLength);
-		satPixClass=newArray(resultsLength);
 		maxCount=newArray(resultsLength);
 		noContClass=newArray(resultsLength);
 		totalArea=newArray(resultsLength);
 		areaFraction=newArray(resultsLength);
 		monolayerArea=newArray(resultsLength);
-		monoAreaClass=newArray(resultsLength);
 		trackerCount=newArray(resultsLength);
 		trackerRatio=newArray(resultsLength);
 		count=0;
@@ -418,11 +405,6 @@ macro "Cell_Adhesion" {
 					run("Measure");
 					satPix[count]=getResult("%Area", 0);
 					run("Clear Results");
-					if (satPix[count]>=qcDebris) {
-						satPixClass[count]=true;
-					} else {
-						satPixClass[count]=false;
-					}
 					
 					//quality control: no content
 					selectImage(counterstain);
@@ -457,11 +439,6 @@ macro "Cell_Adhesion" {
 					areaFraction[count]=getResult("%Area", 0);
 					monolayerArea[count]=totalArea[count]*areaFraction[count];
 					run("Clear Results");
-					if (areaFraction[count]<qcMonolayer) {
-						monoAreaClass[count]=true;
-					} else {
-						monoAreaClass[count]=false;
-					}
 
 					//tracker count
 					selectImage(tracker);
@@ -504,9 +481,9 @@ macro "Cell_Adhesion" {
 		title2 = "["+title1+"]";
 		f = title2;
 		run("Table...", "name="+title2+" width=500 height=500");
-		print(f, "\\Headings:n\tRow\tColumn\tField\tMean/s.d.\t%SatPix\tDebris\tMaxCount\tNoCont\tTotalArea\tMonolayerArea\t%MonoArea\tQC monolayer\tCells\tCells/mm2");
+		print(f, "\\Headings:n\tRow\tColumn\tField\tMean/s.d.\t%SatPix\tMaxCount\t%MonoArea\tCells\tMonolayerArea(mm2)\tCells/mm2");
 		for (i=0; i<resultsLength; i++) {
-			print(f, i+1 + "\t" + row[i]+ "\t" + column[i] + "\t" + field[i] + "\t" + mean_std_ratio[i] + "\t" + satPix[i] + "\t" + satPixClass[i] + "\t" +maxCount[i] + "\t" + noContClass[i] + "\t" + totalArea[i] + "\t" + monolayerArea[i] + "\t" + areaFraction[i] + "\t" + monoAreaClass[i] + "\t" + trackerCount[i] + "\t" + trackerRatio[i]);
+			print(f, i+1 + "\t" + row[i]+ "\t" + column[i] + "\t" + field[i] + "\t" + mean_std_ratio[i] + "\t" + satPix[i] + "\t" + maxCount[i] + "\t" + areaFraction[i] + "\t" + trackerCount[i] + "\t" + monolayerArea[i] + "\t" + trackerRatio[i]);
 		}
 		//save as TXT
 		saveAs("Text", dir+File.separator+"ResultsTable_"+projectName+".csv");
