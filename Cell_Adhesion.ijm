@@ -379,6 +379,7 @@ macro "Cell_Adhesion" {
 		trackerRatio=newArray(resultsLength);
 		count=0;
 		setBatchMode(true);
+		setOption("ScaleConversions", true);
 		roiManager("reset");
 		print("\\Clear");
 		print("Running analysis");
@@ -392,7 +393,11 @@ macro "Cell_Adhesion" {
 					column[count]=substring(wellName[i], 4, 6);
 					field[count]=fieldName[j];
 					open(dir+File.separator+counterstain);
+					imageBitDepth=bitDepth();
+					if (imageBitDepth != 8) run("8-bit");
 					open(dir+File.separator+tracker);
+					imageBitDepth=bitDepth();
+					if (imageBitDepth != 8) run("8-bit");
 					
 					//quality control: blurring
 					getStatistics(areaImage, meanImage, minImage, maxImage, stdImage, histogramImage);
@@ -401,7 +406,6 @@ macro "Cell_Adhesion" {
 					//quality control: % sat pixels
 					selectImage(counterstain);
 					run("Duplicate...", "title=QC_sat");
-					run("8-bit");
 					run("Set Measurements...", "area_fraction display redirect=None decimal=2");
 					setThreshold(255, 255);
 					run("Measure");
@@ -411,7 +415,6 @@ macro "Cell_Adhesion" {
 					//quality control: no content
 					selectImage(counterstain);
 					run("Duplicate...", "title=QC_nc1");
-					run("8-bit");
 					run("Gaussian Blur...", "sigma=1");
 					run("Duplicate...", "title=QC_nc2");
 					selectImage("QC_nc1");
@@ -426,8 +429,6 @@ macro "Cell_Adhesion" {
 					
 					//quality control & measurements: monolayer
 					selectImage(counterstain);
-					setOption("ScaleConversions", true);
-					run("8-bit");
 					totalArea[count]=areaImage;
 					run("Clear Results");
 					run("Maximum...", "radius=2");
@@ -441,9 +442,6 @@ macro "Cell_Adhesion" {
 
 					//tracker count
 					selectImage(tracker);
-					setOption("ScaleConversions", true);
-					imageBitDepth=bitDepth();
-					if (imageBitDepth != 8) run("8-bit");
 					run("Find Maxima...", "prominence=30 output=List");
 					nMaxima=nResults;
 					x=newArray(nMaxima);
