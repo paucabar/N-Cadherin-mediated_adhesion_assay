@@ -372,7 +372,6 @@ macro "Cell_Adhesion" {
 		mean_std_ratio=newArray(resultsLength);
 		satPix=newArray(resultsLength);
 		maxCount=newArray(resultsLength);
-		noContClass=newArray(resultsLength);
 		totalArea=newArray(resultsLength);
 		areaFraction=newArray(resultsLength);
 		monolayerArea=newArray(resultsLength);
@@ -415,7 +414,6 @@ macro "Cell_Adhesion" {
 					run("8-bit");
 					run("Gaussian Blur...", "sigma=1");
 					run("Duplicate...", "title=QC_nc2");
-					//run("Subtract Background...", "rolling=50");
 					selectImage("QC_nc1");
 					run("Find Maxima...", "prominence=30 output=Count");
 					maxCount1=getResult("Count", 0);
@@ -432,17 +430,13 @@ macro "Cell_Adhesion" {
 					run("8-bit");
 					totalArea[count]=areaImage;
 					run("Clear Results");
-					//run("Enhance Contrast...", "saturated="+enhanceCounterstaining+" normalize");
-					//run("Mean...", "radius="+meanCounterstaining);
-					//run("Median...", "radius="+medianCounterstaining);
 					run("Maximum...", "radius=2");
 					thresholdFraction(0.10);
-					//run("Options...", "iterations="+dilateIter+" count=1 do=Dilate");
 					run("Set Measurements...", "area_fraction display redirect=None decimal=2");
 					setThreshold(255, 255);
 					run("Measure");
-					areaFraction[count]=getResult("%Area", 0);
-					monolayerArea[count]=totalArea[count]*areaFraction[count];
+					areaFraction[count]=getResult("%Area", 0)/100;
+					monolayerArea[count]=totalArea[count]*areaFraction[count]*pow(10, -6);
 					run("Clear Results");
 
 					//tracker count
@@ -457,11 +451,9 @@ macro "Cell_Adhesion" {
 					for (k=0; k<nMaxima; k++) {
 						x[k]=getResult("X", k);
 						y[k]=getResult("Y", k);
-					}
-					
+					}					
 					thresholdFraction (0.1);
-					run("Make Binary");
-					
+					run("Make Binary");				
 					if (nMaxima>1) {
 						getDimensions(widthTracker, heightTracker, channelsTracker, slicesTracker, framesTracker);
 						newImage("Seeds", "8-bit white", widthTracker, heightTracker, 1);
@@ -473,10 +465,9 @@ macro "Cell_Adhesion" {
 						run("Make Binary");
 						imageCalculator("AND create", tracker, "Seeds");
 					}
-					
 					run("Analyze Particles...", "size=5-Infinity pixel exclude add");
 					trackerCount[count]=nResults;
-					trackerRatio[count]=trackerCount[count]/(monolayerArea[count]*0.000001);
+					trackerRatio[count]=trackerCount[count]/(monolayerArea[count]);
 					tracker_roi_count=roiManager("count");
 					if (saveROIs == "Yes" && tracker_roi_count != 0) {
 						roiManager("deselect");
