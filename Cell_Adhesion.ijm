@@ -97,40 +97,26 @@ macro "Cell_Adhesion" {
 			channels[i]=substring(tiffArray[i], index1+3, index2);
 		}
 
-
-		//set some parameter menu arrays
-		threshold=getList("threshold.methods");
-
 		//Extract values from a parameter dataset file
 		if(importPD=="Yes") {
 			projectName=parameters[0];
 			counterstainingChannel=parameters[1];
 			trackerChannel=parameters[2];
-			enhanceCounterstaining=parameters[3];
-			meanCounterstaining=parameters[4];
-			medianCounterstaining=parameters[5];
-			thresholdMethod=parameters[6];
-			dilateIter=parameters[7];
-			rollingTracker=parameters[8];
-			enhanceTracker=parameters[9];
-			meanTracker=parameters[10];
-			medianTracker=parameters[11];
-			noiseToleranceTracker=parameters[12];
+			maximumRadius=parameters[3];
+			thresholdCounterstain=parameters[4];
+			prominence=parameters[5];
+			thresholdTracker=parameters[6];
+			minSize=parameters[7];
 		} else {
 			//default parameters
 			projectName="Project";
 			counterstainingChannel=channels[0];
 			trackerChannel=channels[0];
-			enhanceCounterstaining=0.1;
-			meanCounterstaining=2;
-			medianCounterstaining=10;
-			thresholdMethod="Triangle";
-			dilateIter=50;
-			rollingTracker=100;
-			enhanceTracker=0.1;
-			meanTracker=0;
-			medianTracker=15;
-			noiseToleranceTracker=75;
+			maximumRadius=2;
+			thresholdCounterstain=0.1;
+			prominence=30;
+			thresholdTracker=0.1;
+			minSize=5;
 		}
 	
 		//'Select Parameters' dialog box
@@ -144,33 +130,23 @@ macro "Cell_Adhesion" {
 		Dialog.addChoice("Tracker", channels, trackerChannel);
 		Dialog.setInsets(0, 170, 0);
 		Dialog.addMessage("MONOLAYER PARAMETERS:");
-		Dialog.addNumber("Saturated pixels (normalize)", enhanceCounterstaining, 1, 3, "%");
-		Dialog.addNumber("Mean (sigma)", meanCounterstaining, 0, 2, "pixels");
-		Dialog.addNumber("Median (sigma)", medianCounterstaining, 0, 2, "pixels");
-		Dialog.addChoice("Threshold method", threshold, thresholdMethod);
-		Dialog.addNumber("Dilate", dilateIter, 0, 3, "iterations");
+		Dialog.addNumber("Maximum (radius)", maximumRadius, 0, 2, "pixels");
+		Dialog.addSlider("Threshold", 0.01, 1.00, thresholdCounterstain);
 		Dialog.setInsets(0, 170, 0);
 		Dialog.addMessage("TRACKER PARAMETERS:");
-		Dialog.addNumber("Subtract Background (rolling)", rollingTracker);
-		Dialog.addNumber("Saturated pixels (normalize)", enhanceTracker, 1, 3, "%");
-		Dialog.addNumber("Mean (sigma)", meanTracker, 0, 2, "pixels");
-		Dialog.addNumber("Median (sigma)", medianTracker, 0, 2, "pixels");
-		Dialog.addSlider("Noise Tolerance", 0, 255, noiseToleranceTracker);
+		Dialog.addNumber("Prominence >", prominence, 0, 2, "pixels");
+		Dialog.addSlider("Threshold", 0.01, 1.00, thresholdTracker);
+		Dialog.addNumber("Min object size", minSize, 0, 2, "pixels");
 		Dialog.setInsets(0, 170, 0);
 		Dialog.show()
 		projectName=Dialog.getString();
 		counterstainingChannel=Dialog.getChoice();
 		trackerChannel=Dialog.getChoice();
-		enhanceCounterstaining=Dialog.getNumber();
-		meanCounterstaining=Dialog.getNumber();
-		medianCounterstaining=Dialog.getNumber();
-		thresholdMethod=Dialog.getChoice();
-		dilateIter=Dialog.getNumber();
-		rollingTracker=Dialog.getNumber();
-		enhanceTracker=Dialog.getNumber();
-		meanTracker=Dialog.getNumber();
-		medianTracker=Dialog.getNumber();
-		noiseToleranceTracker=Dialog.getNumber();
+		maximumRadius=Dialog.getNumber();
+		thresholdCounterstain=Dialog.getNumber();
+		prominence=Dialog.getNumber();
+		thresholdTracker=Dialog.getNumber();
+		minSize=Dialog.getNumber();
 	
 		//check the parameter selection
 		if(counterstainingChannel==trackerChannel) {
@@ -186,19 +162,14 @@ macro "Cell_Adhesion" {
 		print(f, "Project\t" + projectName);
 		print(f, "Counterstaining channel\t" + counterstainingChannel);
 		print(f, "Tracker channel\t" + trackerChannel);
-		print(f, "Enhance (counterstaining)\t" + enhanceCounterstaining);
-		print(f, "Mean (counterstaining)\t" + meanCounterstaining);
-		print(f, "Median (counterstaining)\t" + medianCounterstaining);
-		print(f, "Threshold method\t" + thresholdMethod);
-		print(f, "Dilate (iterations)\t" + dilateIter);
-		print(f, "Rolling (tracker)\t" + rollingTracker);
-		print(f, "Enhance (tracker)\t" + enhanceTracker);
-		print(f, "Mean (tracker)\t" + meanTracker);
-		print(f, "Median (tracker)\t" + medianTracker);
-		print(f, "Noise tolerance (tracker)\t" + noiseToleranceTracker);
+		print(f, "Maximum (radius)\t" + maximumRadius);
+		print(f, "Threshold (counterstain)\t" + thresholdCounterstain);
+		print(f, "Prominence >\t" + prominence);
+		print(f, "Threshold (tracker)\t" + thresholdTracker);
+		print(f, "Min object size\t" +minSize);
 
 		//save as txt
-		saveAs("txt", dir+"\\"+projectName);
+		saveAs("txt", dir+File.separator+projectName);
 		selectWindow(title1);
 		run("Close");
 		
@@ -217,7 +188,13 @@ macro "Cell_Adhesion" {
 			}
 		}
 	}
+
+	setOption("ScaleConversions", true);
 	setOption("BlackBackground", false);
+	roiManager("reset");
+	print("\\Clear");
+	roiManager("reset");
+	run("Close All");
 
 	//Pre-Analysis workflow
 	if(mode=="Pre-Analysis (parameter tweaking)") {
@@ -232,8 +209,8 @@ macro "Cell_Adhesion" {
 			field=Dialog.getChoice();
 			counterstain=well+"(fld "+field+" wv "+counterstainingChannel+ " - "+counterstainingChannel+").tif";
 			tracker=well+"(fld "+field+" wv "+trackerChannel+ " - "+trackerChannel+").tif";
-			
-			//setBatchMode(true);
+
+			setBatchMode(true);
 			
 			//Merge
 			open(dir+File.separator+counterstain);
@@ -255,8 +232,8 @@ macro "Cell_Adhesion" {
 			//Monolayer
 			selectImage(counterstain+"_mask");
 			run("Duplicate...", "title=Maximum_filter");
-			run("Maximum...", "radius=2");
-			thresholdFraction(0.10);
+			run("Maximum...", "radius="+maximumRadius);
+			thresholdFraction(thresholdCounterstain);
 			rename("Monolayer");
 			run("Duplicate...", "title=Background");
 			run("Invert");
@@ -272,7 +249,7 @@ macro "Cell_Adhesion" {
 			
 			//Tracker-labeled cells
 			selectWindow(tracker+"_mask");
-			run("Find Maxima...", "prominence=30 output=List");
+			run("Find Maxima...", "prominence="+prominence+" output=List");
 			nMaxima=nResults;
 			x=newArray(nMaxima);
 			y=newArray(nMaxima);
@@ -280,7 +257,7 @@ macro "Cell_Adhesion" {
 				x[k]=getResult("X", k);
 				y[k]=getResult("Y", k);
 			}					
-			thresholdFraction (0.1);
+			thresholdFraction (thresholdTracker);
 			run("Make Binary");				
 			if (nMaxima>1) {
 				getDimensions(widthTracker, heightTracker, channelsTracker, slicesTracker, framesTracker);
@@ -294,7 +271,7 @@ macro "Cell_Adhesion" {
 				imageCalculator("AND create", tracker+"_mask", "Seeds");
 				rename("tracker_mask");
 			}
-			run("Analyze Particles...", "size=5-Infinity pixel exclude add");
+			run("Analyze Particles...", "size="+minSize+"-Infinity pixel exclude add");
 			
 			//close
 			selectWindow("Results");
@@ -379,10 +356,8 @@ macro "Cell_Adhesion" {
 		trackerCount=newArray(resultsLength);
 		trackerRatio=newArray(resultsLength);
 		count=0;
+
 		setBatchMode(true);
-		setOption("ScaleConversions", true);
-		roiManager("reset");
-		print("\\Clear");
 		print("Running analysis");
 		for (i=0; i<nWells; i++) {
 			if (fileCheckbox[i]) {
@@ -432,8 +407,8 @@ macro "Cell_Adhesion" {
 					selectImage(counterstain);
 					totalArea[count]=areaImage;
 					run("Clear Results");
-					run("Maximum...", "radius=2");
-					thresholdFraction(0.10);
+					run("Maximum...", "radius="+maximumRadius);
+					thresholdFraction(thresholdCounterstain);
 					run("Set Measurements...", "area_fraction display redirect=None decimal=2");
 					setThreshold(255, 255);
 					run("Measure");
@@ -443,7 +418,7 @@ macro "Cell_Adhesion" {
 
 					//tracker count
 					selectImage(tracker);
-					run("Find Maxima...", "prominence=30 output=List");
+					run("Find Maxima...", "prominence="+prominence+" output=List");
 					nMaxima=nResults;
 					x=newArray(nMaxima);
 					y=newArray(nMaxima);
@@ -451,7 +426,7 @@ macro "Cell_Adhesion" {
 						x[k]=getResult("X", k);
 						y[k]=getResult("Y", k);
 					}					
-					thresholdFraction (0.1);
+					thresholdFraction (thresholdTracker);
 					run("Make Binary");				
 					if (nMaxima>1) {
 						getDimensions(widthTracker, heightTracker, channelsTracker, slicesTracker, framesTracker);
@@ -464,7 +439,7 @@ macro "Cell_Adhesion" {
 						run("Make Binary");
 						imageCalculator("AND create", tracker, "Seeds");
 					}
-					run("Analyze Particles...", "size=5-Infinity pixel exclude add");
+					run("Analyze Particles...", "size="+minSize+"-Infinity pixel exclude add");
 					trackerCount[count]=nResults;
 					trackerRatio[count]=trackerCount[count]/(monolayerArea[count]);
 					tracker_roi_count=roiManager("count");
