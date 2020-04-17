@@ -232,90 +232,89 @@ macro "Cell_Adhesion" {
 			field=Dialog.getChoice();
 			counterstain=well+"(fld "+field+" wv "+counterstainingChannel+ " - "+counterstainingChannel+").tif";
 			tracker=well+"(fld "+field+" wv "+trackerChannel+ " - "+trackerChannel+").tif";
-			setBatchMode(true);
+			
+			//setBatchMode(true);
+			
 			//Merge
 			open(dir+File.separator+counterstain);
-			run("Duplicate...", "title=Nuclei");
-			run("Duplicate...", "title=Nuclei_8-bit");
-			run("8-bit");
+			imageBitDepth=bitDepth();
+			if (imageBitDepth != 8) run("8-bit");
+			run("Duplicate...", "title=["+counterstain+"_grayscale]");
+			run("Duplicate...", "title=["+counterstain+"_mask]");
 			open(dir+File.separator+tracker);
-			run("Duplicate...", "title=Find_Maxima");
-			run("Duplicate...", "title=Maxima_Filter");
+			imageBitDepth=bitDepth();
+			if (imageBitDepth != 8) run("8-bit");
+			run("Duplicate...", "title=["+tracker+"_mask]");
 			selectImage(counterstain);
 			run("Enhance Contrast...", "saturated=0.1 normalize");
 			selectImage(tracker);
 			run("Enhance Contrast...", "saturated=0.1 normalize");
 			run("Merge Channels...", "c1=["+tracker+"] c3=["+counterstain+"] keep");
 			rename("1 - Merge");
+			
 			//Monolayer
-			selectImage("Nuclei");
-			run("Enhance Contrast...", "saturated="+enhanceCounterstaining+" normalize");
-			run("Mean...", "radius="+meanCounterstaining);
-			run("Median...", "radius="+medianCounterstaining);
-			setAutoThreshold(thresholdMethod+" dark");
-			run("Convert to Mask");
-			resetThreshold();
-			run("Duplicate...", "title=Monolayer");
-			run("Options...", "iterations="+dilateIter+" count=1 do=Dilate");
+			selectImage(counterstain+"_mask");
+			run("Duplicate...", "title=Maximum_filter");
+			run("Maximum...", "radius=2");
+			thresholdFraction(0.10);
+			rename("Monolayer");
 			run("Duplicate...", "title=Background");
 			run("Invert");
-			imageCalculator("XOR create", "Nuclei","Monolayer");
-			rename("Monolayer_no-nuclei");
-			run("Merge Channels...", "c3=Background c2=Monolayer_no-nuclei c4=[Nuclei_8-bit] keep");
+			selectImage(counterstain+"_mask");
+			setAutoThreshold("Huang dark");
+			run("Make Binary");
+			imageCalculator("XOR create", counterstain+"_mask","Monolayer");
+			rename("Monolayer_no-nuclei-1");
+			imageCalculator("AND create", "Monolayer_no-nuclei-1","Monolayer");
+			rename("Monolayer_no-nuclei-2");
+			run("Merge Channels...", "c3=Background c2=Monolayer_no-nuclei-2 c4=["+counterstain+"_grayscale]");
 			rename("2 - M/B");
+			
 			//Tracker-labeled cells
-			selectWindow("Maxima_Filter");
-			run("8-bit");
-			run("Subtract Background...", "rolling=50");
-			run("Enhance Contrast...", "saturated=0.1 normalize");
-			run("Find Maxima...", "prominence=75 output=Count");
-			maxFilterTracker=getResult("Count", 0);
-			run("Select None");
-			run("Clear Results");
-			selectWindow("Find_Maxima");
-			run("Point Tool...", "type=Dot color=Magenta size=Large label counter=0");
-			setOption("ScaleConversions", true);
-			run("8-bit");
-			run("Subtract Background...", "rolling="+rollingTracker);
-			run("Enhance Contrast...", "saturated="+enhanceTracker+" normalize");
-			run("Mean...", "radius="+meanTracker);
-			run("Median...", "radius="+medianTracker);
-			run("Find Maxima...", "prominence="+noiseToleranceTracker+" output=List");
-			selectWindow(tracker);
-			run("Duplicate...", "title=tracker_final");
-			//close
-			close("Nuclei");
-			close("Nuclei_8-bit");
-			close("Monolayer");
-			close("Background");
-			close("Monolayer_no-nuclei");
-			close("Find_Maxima");
-			close("Maxima_Filter");
-			close(counterstain);
-			close(tracker);
-			//Stack
-			run("Images to Stack", "name=Stack title=[] use");
-			setBatchMode(false);
-			x=newArray(nResults);
-			y=newArray(nResults);
-			run("Select None");
-			if (maxFilterTracker<1000) {
-				for (i=0; i<x.length; i++) {
-					x[i]=getResult("X", i);
-					y[i]=getResult("Y", i);
-					makePoint(x[i], y[i], "large cyan dot");
-					roiManager("Add");
+			selectWindow(tracker+"_mask");
+			run("Find Maxima...", "prominence=30 output=List");
+			nMaxima=nResults;
+			x=newArray(nMaxima);
+			y=newArray(nMaxima);
+			for (k=0; k<nMaxima; k++) {
+				x[k]=getResult("X", k);
+				y[k]=getResult("Y", k);
+			}					
+			thresholdFraction (0.1);
+			run("Make Binary");				
+			if (nMaxima>1) {
+				getDimensions(widthTracker, heightTracker, channelsTracker, slicesTracker, framesTracker);
+				newImage("Seeds", "8-bit white", widthTracker, heightTracker, 1);
+				for (k=0; k<nMaxima; k++) {
+					setPixel(x[k], y[k], 0);
 				}
-				roiManager("Show All");
+				run("Voronoi");
+				setThreshold(0, 0);
+				run("Make Binary");
+				imageCalculator("AND create", tracker+"_mask", "Seeds");
+				rename("tracker_mask");
 			}
+			run("Analyze Particles...", "size=5-Infinity pixel exclude add");
+			
+			//close
 			selectWindow("Results");
 			run("Close");
-			waitForUser("Click OK to exit");
+			close(counterstain);
+			close(tracker);
+			close(counterstain+"_mask");
+			close(tracker+"_mask");
+			close("tracker_mask");
+			close("Seeds");
+			close("Monolayer");
+			close("Monolayer_no-nuclei-1");
+			
+			//Show
+			run("Images to Stack", "name=Stack title=[] use");
+			setBatchMode(false);
+			roiManager("show all with labels");
+			waitForUser("Finish", "Click to clean up");
+			roiManager("reset");
 			run("Close All");
-			if (isOpen("ROI Manager")) {
-				selectWindow("ROI Manager");
-				run("Close");
-			}
 			radioButtonItems=newArray("Yes", "No");
 			Dialog.create("Test Mode");
 			Dialog.addRadioButtonGroup("Test other field-of-view:", radioButtonItems, 1, 2, radioButtonItems[0]);
@@ -323,6 +322,8 @@ macro "Cell_Adhesion" {
 			keepTestMode=Dialog.getRadioButton();
 			if (keepTestMode=="No") {
 				testMode=false;
+				selectWindow("ROI Manager");
+				run("Close");
 			}
 		}
 	}
