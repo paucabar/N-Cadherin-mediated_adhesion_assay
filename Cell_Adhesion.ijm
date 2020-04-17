@@ -411,18 +411,20 @@ macro "Cell_Adhesion" {
 					
 					//quality control: no content
 					selectImage(counterstain);
-					run("Duplicate...", "title=QC_nc");
+					run("Duplicate...", "title=QC_nc1");
 					run("8-bit");
-					run("Subtract Background...", "rolling=50");
+					run("Gaussian Blur...", "sigma=1");
+					run("Duplicate...", "title=QC_nc2");
+					//run("Subtract Background...", "rolling=50");
+					selectImage("QC_nc1");
+					run("Find Maxima...", "prominence=30 output=Count");
+					maxCount1=getResult("Count", 0);
+					selectImage("QC_nc2");
 					run("Enhance Contrast...", "saturated=0.4 normalize");
-					run("Find Maxima...", "noise=75 output=[Count]");
-					maxCount[count]=getResult("Count", 0);
+					run("Find Maxima...", "prominence=30 output=Count");
+					maxCount2=getResult("Count", 1);
+					maxCount[count]=maxCount1/maxCount2;
 					run("Clear Results");
-					if (maxCount[count]>=1000) {
-						noContClass[count]=true;
-					} else {
-						noContClass[count]=false;
-					}
 					
 					//quality control & measurements: monolayer
 					selectImage(counterstain);
@@ -479,8 +481,8 @@ macro "Cell_Adhesion" {
 					if (saveROIs == "Yes" && tracker_roi_count != 0) {
 						roiManager("deselect");
 						roiManager("save", dir+File.separator+tracker+"_ROI.zip");
+						roiManager("reset");
 					}
-					roiManager("reset");
 
 					//close
 					run("Close All");
@@ -497,7 +499,7 @@ macro "Cell_Adhesion" {
 		title2 = "["+title1+"]";
 		f = title2;
 		run("Table...", "name="+title2+" width=500 height=500");
-		print(f, "\\Headings:n\tRow\tColumn\tField\tMean/s.d.\t%SatPix\tMaxCount\tMonoAreaFraction\tCells\tMonolayerArea(mm2)\tCells/mm2");
+		print(f, "\\Headings:n\tRow\tColumn\tField\tMean/s.d.\t%SatPix\tMaxCountRatio\tMonoAreaFraction\tCells\tMonolayerArea(mm2)\tCells/mm2");
 		for (i=0; i<resultsLength; i++) {
 			print(f, i+1 + "\t" + row[i]+ "\t" + column[i] + "\t" + field[i] + "\t" + mean_std_ratio[i] + "\t" + satPix[i] + "\t" + maxCount[i] + "\t" + areaFraction[i] + "\t" + trackerCount[i] + "\t" + monolayerArea[i] + "\t" + trackerRatio[i]);
 		}
