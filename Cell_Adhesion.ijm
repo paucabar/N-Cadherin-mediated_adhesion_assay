@@ -380,6 +380,8 @@ macro "Cell_Adhesion" {
 		trackerRatio=newArray(resultsLength);
 		count=0;
 		setBatchMode(true);
+		roiManager("reset");
+		print("\\Clear");
 		print("Running analysis");
 		for (i=0; i<nWells; i++) {
 			if (fileCheckbox[i]) {
@@ -397,7 +399,7 @@ macro "Cell_Adhesion" {
 					getStatistics(areaImage, meanImage, minImage, maxImage, stdImage, histogramImage);
 					mean_std_ratio[count]=meanImage/stdImage;
 					
-					//quality control: debris
+					//quality control: % sat pixels
 					selectImage(counterstain);
 					run("Duplicate...", "title=QC_sat");
 					run("8-bit");
@@ -424,16 +426,16 @@ macro "Cell_Adhesion" {
 					
 					//quality control & measurements: monolayer
 					selectImage(counterstain);
-					run("Duplicate...", "title=QC_monolayer");
+					setOption("ScaleConversions", true);
+					run("8-bit");
 					totalArea[count]=areaImage;
 					run("Clear Results");
-					run("Enhance Contrast...", "saturated="+enhanceCounterstaining+" normalize");
-					run("Mean...", "radius="+meanCounterstaining);
-					run("Median...", "radius="+medianCounterstaining);
-					setAutoThreshold(thresholdMethod+" dark");
-					run("Convert to Mask");
-					resetThreshold();
-					run("Options...", "iterations="+dilateIter+" count=1 do=Dilate");
+					//run("Enhance Contrast...", "saturated="+enhanceCounterstaining+" normalize");
+					//run("Mean...", "radius="+meanCounterstaining);
+					//run("Median...", "radius="+medianCounterstaining);
+					run("Maximum...", "radius=2");
+					thresholdFraction(0.10);
+					//run("Options...", "iterations="+dilateIter+" count=1 do=Dilate");
 					run("Set Measurements...", "area_fraction display redirect=None decimal=2");
 					setThreshold(255, 255);
 					run("Measure");
@@ -443,29 +445,42 @@ macro "Cell_Adhesion" {
 
 					//tracker count
 					selectImage(tracker);
-					run("Point Tool...", "type=Dot color=Magenta size=Large label counter=0");
 					setOption("ScaleConversions", true);
-					run("8-bit");
-					run("Duplicate...", "title=Maxima_Filter");
-					selectWindow(tracker);
-					run("Subtract Background...", "rolling="+rollingTracker);
-					run("Enhance Contrast...", "saturated="+enhanceTracker+" normalize");
-					run("Mean...", "radius="+meanTracker);
-					run("Median...", "radius="+medianTracker);
-					run("Find Maxima...", "prominence="+noiseToleranceTracker+" output=Count");
-					trackerCount[count]=getResult("Count", 0);
-					run("Clear Results");
-					selectWindow("Maxima_Filter");
-					run("Subtract Background...", "rolling=50");
-					run("Enhance Contrast...", "saturated=0.1 normalize");
-					run("Find Maxima...", "prominence=75 output=Count");
-					maxFilterTracker=getResult("Count", 0);
-					run("Select None");
-					run("Clear Results");
-					if (maxFilterTracker>=1000) {
-						trackerCount[count]=0;
+					imageBitDepth=bitDepth();
+					if (imageBitDepth != 8) run("8-bit");
+					run("Find Maxima...", "prominence=30 output=List");
+					nMaxima=nResults;
+					x=newArray(nMaxima);
+					y=newArray(nMaxima);
+					for (k=0; k<nMaxima; k++) {
+						x[k]=getResult("X", k);
+						y[k]=getResult("Y", k);
 					}
+					
+					thresholdFraction (0.1);
+					run("Make Binary");
+					
+					if (nMaxima>1) {
+						getDimensions(widthTracker, heightTracker, channelsTracker, slicesTracker, framesTracker);
+						newImage("Seeds", "8-bit white", widthTracker, heightTracker, 1);
+						for (k=0; k<nMaxima; k++) {
+							setPixel(x[k], y[k], 0);
+						}
+						run("Voronoi");
+						setThreshold(0, 0);
+						run("Make Binary");
+						imageCalculator("AND create", tracker, "Seeds");
+					}
+					
+					run("Analyze Particles...", "size=5-Infinity pixel exclude add");
+					trackerCount[count]=nResults;
 					trackerRatio[count]=trackerCount[count]/(monolayerArea[count]*0.000001);
+					tracker_roi_count=roiManager("count");
+					if (saveROIs == "Yes" && tracker_roi_count != 0) {
+						roiManager("deselect");
+						roiManager("save", dir+File.separator+tracker+"_ROI.zip");
+					}
+					roiManager("reset");
 
 					//close
 					run("Close All");
@@ -482,7 +497,7 @@ macro "Cell_Adhesion" {
 		title2 = "["+title1+"]";
 		f = title2;
 		run("Table...", "name="+title2+" width=500 height=500");
-		print(f, "\\Headings:n\tRow\tColumn\tField\tMean/s.d.\t%SatPix\tMaxCount\t%MonoArea\tCells\tMonolayerArea(mm2)\tCells/mm2");
+		print(f, "\\Headings:n\tRow\tColumn\tField\tMean/s.d.\t%SatPix\tMaxCount\tMonoAreaFraction\tCells\tMonolayerArea(mm2)\tCells/mm2");
 		for (i=0; i<resultsLength; i++) {
 			print(f, i+1 + "\t" + row[i]+ "\t" + column[i] + "\t" + field[i] + "\t" + mean_std_ratio[i] + "\t" + satPix[i] + "\t" + maxCount[i] + "\t" + areaFraction[i] + "\t" + trackerCount[i] + "\t" + monolayerArea[i] + "\t" + trackerRatio[i]);
 		}
@@ -492,4 +507,11 @@ macro "Cell_Adhesion" {
 		//run("Close");
 		print("End of process");
 	}
+}
+
+function thresholdFraction (fraction) {
+	bitDepthImage=bitDepth();
+	upper=pow(2, bitDepthImage);
+	setThreshold(fraction*upper, upper);
+	run("Make Binary");
 }
