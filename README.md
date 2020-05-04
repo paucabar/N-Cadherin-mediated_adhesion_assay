@@ -31,13 +31,13 @@ Know more about [Object Size & Pixel Size](https://c4science.ch/w/bioimaging_and
 
 ## Test Dataset
 
-You can [download](https://drive.google.com/drive/folders/1TwMUoJYkDqVXPFvARh_2Ig_VMTkTkx9a?usp=sharing) an image dataset.
+Download an example [image dataset](https://drive.google.com/drive/folders/1TwMUoJYkDqVXPFvARh_2Ig_VMTkTkx9a?usp=sharing).
 
 ## Usage
 
 ### Downsizing (optional)
 
-1. Run the **Post-Acquisition Binning** macro (<code>Plugins > NeuroMol Lab > other macros > Post-Acquisition Binning</code>)
+1. Run the **Post-Acquisition Binning** [macro](https://github.com/paucabar/other_macros) (<code>Plugins > NeuroMol Lab > other macros > Post-Acquisition Binning</code>)
 2. Select the directory containing the images (.tif files)
 3. Select the _binning_ mode (2x2, 4x4)
 4. Run
