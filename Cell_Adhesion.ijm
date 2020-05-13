@@ -11,7 +11,7 @@ macro "Cell_Adhesion" {
 #@ String (label=" ", value="<html><font size=6><b>High Throughput Analysis</font><br><font color=teal>Cell Adhesion Assay</font></b></html>", visibility=MESSAGE, persist=false) heading
 #@ String(label="Select mode:", choices={"Analysis", "Pre-Analysis (parameter tweaking)"}, persist=true, style="radioButtonVertical") mode
 #@ File(label="Select directory:", persist=true, style="directory") dir
-#@ String (label="<html>Load pre-established<br>parameter dataset:</html>", choices={"No", "Yes"}, persist=true, style="radioButtonHorizontal") importPD
+#@ String (label="<html>Load project</html>", choices={"No", "Yes"}, persist=true, style="radioButtonHorizontal") importPD
 #@ String (label="<html>Save ROIs:</html>", choices={"No", "Yes"}, value="Yes", persist=true, style="radioButtonHorizontal") saveROIs
 #@ String (label=" ", value="<html><img src=\"https://live.staticflickr.com/65535/48557333566_d2a51be746_o.png\"></html>", visibility=MESSAGE, persist=false) logo
 #@ String (label=" ", value="<html><font size=2><b>Neuromolecular Biology Lab</b><br>ERI BIOTECMED, Universitat de València (Valencia, Spain)</font></html>", visibility=MESSAGE, persist=false) message
@@ -365,10 +365,17 @@ if(mode=="Analysis") {
 
 	setBatchMode(true);
 	print("Running analysis");
+	start=getTime();
+	count_print=0;
 	for (i=0; i<nWells; i++) {
 		if (fileCheckbox[i]) {
 			for (j=0; j<fieldName.length; j++) {
-				print(wellName[i]+" (fld " +fieldName[j] + ") " + count+1+"/"+resultsLength);
+				print("\\Update1:"+wellName[i]+" (fld " +fieldName[j] + ") " + count+1+"/"+resultsLength);
+				elapsed=round((getTime()-start)/1000);
+				expected=elapsed/(count_print+1)*resultsLength;
+				print("\\Update2:Elapsed time "+hours_minutes_seconds(elapsed));
+				print("\\Update3:Estimated time "+hours_minutes_seconds(expected));
+				count_print++;
 				counterstain=wellName[i]+"(fld "+fieldName[j]+" wv "+counterstainingChannel+ " - "+counterstainingChannel+").tif";
 				tracker=wellName[i]+"(fld "+fieldName[j]+" wv "+trackerChannel+ " - "+trackerChannel+").tif";
 				row[count]=substring(wellName[i], 0, 1);
@@ -464,6 +471,11 @@ if(mode=="Analysis") {
 		}
 	}
 	setBatchMode(false);
+	elapsed=round((getTime()-start)/1000);
+	print("\\Update0:End of process");
+	print("\\Update1:Elapsed time "+hours_minutes_seconds(elapsed));
+	print("\\Update2:Saving results");
+	print("\\Update3:");
 	
 	// results table
 	title1 = "Results table";
@@ -478,7 +490,7 @@ if(mode=="Analysis") {
 	saveAs("Text", dir+File.separator+"ResultsTable_"+projectName+".csv");
 	selectWindow("Results table");
 	run("Close");
-	print("End of process");
+	print("\\Update2:Analysis successfully completed");
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -488,5 +500,21 @@ function thresholdFraction (fraction) {
 	upper=pow(2, bitDepthImage);
 	setThreshold(fraction*upper, upper);
 	run("Make Binary");
+}
+
+function hours_minutes_seconds(seconds) {
+	hours=seconds/3600;
+	hours_floor=floor(hours);
+	remaining_seconds=seconds-(hours_floor*3600);
+	remaining_minutes=remaining_seconds/60;
+	minutes_floor=floor(remaining_minutes);
+	remaining_seconds=remaining_seconds-(minutes_floor*60);
+	hours_floor=d2s(hours_floor, 0);
+	minutes_floor=d2s(minutes_floor, 0);
+	remaining_seconds=d2s(remaining_seconds, 0);
+	if (lengthOf(hours_floor) < 2) hours_floor="0"+hours_floor;
+	if (lengthOf(minutes_floor) < 2) minutes_floor="0"+minutes_floor;
+	if (lengthOf(remaining_seconds) < 2) remaining_seconds="0"+remaining_seconds;
+	return hours_floor+":"+minutes_floor+":"+remaining_seconds;
 }
 }
