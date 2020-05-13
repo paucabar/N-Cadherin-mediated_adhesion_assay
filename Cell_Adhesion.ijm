@@ -267,7 +267,14 @@ if(mode=="Pre-Analysis (parameter tweaking)") {
 			imageCalculator("AND create", tracker+"_mask", "Seeds");
 			rename("tracker_mask");
 		}
+		run("Set Measurements...", "  redirect=None decimal=2");
 		run("Analyze Particles...", "size="+minSize+"-Infinity pixel exclude add");
+		selectImage("1 - Merge");
+		roiManager("deselect");
+		roiManager("Set Line Width", 0);
+		setForegroundColor(255, 255, 0);
+		roiManager("draw");
+		roiManager("reset");
 		
 		// close
 		selectWindow("Results");
@@ -284,9 +291,13 @@ if(mode=="Pre-Analysis (parameter tweaking)") {
 		// show
 		run("Images to Stack", "name=Stack title=[] use");
 		setBatchMode(false);
+		zoom=getZoom();
+		while(zoom < 4) {
+			run("In [+]");
+			zoom=getZoom();
+		}
 		roiManager("show all with labels");
 		waitForUser("Finish", "Click to clean up");
-		roiManager("reset");
 		run("Close All");
 		radioButtonItems=newArray("Yes", "No");
 		Dialog.create("Test Mode");
