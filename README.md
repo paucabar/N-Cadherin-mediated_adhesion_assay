@@ -1,3 +1,4 @@
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/paucabar/cell_adhesion_assay/master)
 # Cell Adhesion Assay
 
 ## Description
@@ -69,7 +70,7 @@ Download an example [image dataset](https://drive.google.com/drive/folders/1TwMU
 5. Ok
 6. Adjust the parameters. Know more about the parameters of the workflow on the **wiki page (not yet)**
 7. Run
-8. A series of new files will be saved within the selected directory: a parameter (.txt) file, a results table (.csv) file and the ROI (.zip) files (if checked)
+8. A series of new files will be saved within the selected directory: a parameter file (.txt), a results table file (.csv) and, if checked, the ROI files (.zip)
 
 ## Contributors
 
