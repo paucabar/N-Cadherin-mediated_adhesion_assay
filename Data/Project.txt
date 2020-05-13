@@ -1,0 +1,8 @@
+Project	Project
+Counterstaining channel	DAPI
+Tracker channel	Cy5
+Maximum (radius)	2
+Threshold (counterstain)	0.1
+Prominence >	30
+Threshold (tracker)	0.1
+Min object size	5
