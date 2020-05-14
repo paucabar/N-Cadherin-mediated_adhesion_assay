@@ -15,6 +15,7 @@ dependencies:
   - openjdk=8
   - pip:
     - napari
+    - seaborn
     - trackpy
     - tqdm
     - mrc
