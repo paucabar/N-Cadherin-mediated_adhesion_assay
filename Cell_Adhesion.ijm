@@ -382,42 +382,39 @@ if(mode=="Analysis") {
 				column[count]=substring(wellName[i], 4, 6);
 				field[count]=fieldName[j];
 				open(dir+File.separator+counterstain);
-				imageBitDepth=bitDepth();
-				if (imageBitDepth != 8) run("8-bit");
 				open(dir+File.separator+tracker);
 				imageBitDepth=bitDepth();
 				if (imageBitDepth != 8) run("8-bit");
 				
 				// quality control: blurring
+				selectImage(counterstain);
+				run("Duplicate...", "title=QC_blur");
+				imageBitDepth=bitDepth();
+				if (imageBitDepth != 8) run("8-bit");
+				
 				getStatistics(areaImage, meanImage, minImage, maxImage, stdImage, histogramImage);
 				mean_std_ratio[count]=meanImage/stdImage;
 				
 				// quality control: % sat pixels
-				selectImage(counterstain);
-				run("Duplicate...", "title=QC_sat");
+				rename("QC_sat");
 				run("Set Measurements...", "area_fraction display redirect=None decimal=2");
 				setThreshold(255, 255);
 				run("Measure");
 				satPix[count]=getResult("%Area", 0);
 				run("Clear Results");
 				
-				// quality control: no content
+				// quality control: count
 				selectImage(counterstain);
-				run("Duplicate...", "title=QC_nc1");
-				run("Gaussian Blur...", "sigma=1");
-				run("Duplicate...", "title=QC_nc2");
-				selectImage("QC_nc1");
-				run("Find Maxima...", "prominence=30 output=Count");
-				maxCount1=getResult("Count", 0);
-				selectImage("QC_nc2");
-				run("Enhance Contrast...", "saturated=0.4 normalize");
-				run("Find Maxima...", "prominence=30 output=Count");
-				maxCount2=getResult("Count", 1);
-				maxCount[count]=maxCount1/maxCount2;
+				run("Duplicate...", "title=QC_count");
+				run("Smooth");
+				run("Find Maxima...", "prominence=50 output=Count");
+				maxCount[count]=getResult("Count", 0);
 				run("Clear Results");
 				
 				// quality control & measurements: monolayer
 				selectImage(counterstain);
+				imageBitDepth=bitDepth();
+				if (imageBitDepth != 8) run("8-bit");
 				totalArea[count]=areaImage;
 				run("Clear Results");
 				run("Maximum...", "radius="+maximumRadius);
@@ -466,6 +463,7 @@ if(mode=="Analysis") {
 				run("Close All");
 				selectWindow("Results");
 				run("Close");
+				roiManager("reset");
 				count++;
 			}
 		}
@@ -482,7 +480,7 @@ if(mode=="Analysis") {
 	title2 = "["+title1+"]";
 	f = title2;
 	run("Table...", "name="+title2+" width=500 height=500");
-	print(f, "\\Headings:n\tRow\tColumn\tField\tMean/s.d.\t%SatPix\tMaxCountRatio\tMonoAreaFraction\tCells\tMonolayerArea(mm2)\tCells/mm2");
+	print(f, "\\Headings:n\tRow\tColumn\tField\tMean/s.d.\t%SatPix\tMaxCount\tMonoAreaFraction\tCells\tMonolayerArea(mm2)\tCells/mm2");
 	for (i=0; i<resultsLength; i++) {
 		print(f, i+1 + "\t" + row[i]+ "\t" + column[i] + "\t" + field[i] + "\t" + mean_std_ratio[i] + "\t" + satPix[i] + "\t" + maxCount[i] + "\t" + areaFraction[i] + "\t" + trackerCount[i] + "\t" + monolayerArea[i] + "\t" + trackerRatio[i]);
 	}
