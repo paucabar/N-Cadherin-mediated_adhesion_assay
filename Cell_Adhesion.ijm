@@ -496,9 +496,9 @@ if(mode=="Analysis") {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function thresholdFraction (fraction) {
-	bitDepthImage=bitDepth();
-	upper=pow(2, bitDepthImage);
-	setThreshold(fraction*upper, upper);
+	run("32-bit");
+	run("Enhance Contrast...", "saturated=0.1 normalize");
+	setThreshold(fraction, 1);
 	run("Make Binary");
 }
 
