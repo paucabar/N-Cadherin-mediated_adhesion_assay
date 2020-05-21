@@ -474,6 +474,9 @@ if(mode=="Analysis") {
 	print("\\Update1:Elapsed time "+hours_minutes_seconds(elapsed));
 	print("\\Update2:Saving results");
 	print("\\Update3:");
+
+	//normalize max count
+	maxCount=normalizeData(maxCount);
 	
 	// results table
 	title1 = "Results table";
@@ -514,5 +517,13 @@ function hours_minutes_seconds(seconds) {
 	if (lengthOf(minutes_floor) < 2) minutes_floor="0"+minutes_floor;
 	if (lengthOf(remaining_seconds) < 2) remaining_seconds="0"+remaining_seconds;
 	return hours_floor+":"+minutes_floor+":"+remaining_seconds;
+}
+
+function normalizeData (array) {
+	Array.getStatistics(array, min, max, mean, stdDev);
+	for (a=0; a<array.length; a++) {
+		array[a]=(array[a]-min)/(max-min);
+	}
+	return array;
 }
 }
