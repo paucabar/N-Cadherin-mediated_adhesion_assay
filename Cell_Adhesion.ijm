@@ -196,10 +196,12 @@ run("Close All");
 if(mode=="Pre-Analysis (parameter tweaking)") {
 	title = "Select field-of-view";
 	testMode=true;
+	well=wellName[0];
+	field=fieldName[0];
 	while (testMode) {
 		Dialog.create(title);
-		Dialog.addChoice("Well", wellName);
-		Dialog.addChoice("Field-of-view", fieldName);
+		Dialog.addChoice("Well", wellName, well);
+		Dialog.addChoice("Field-of-view", fieldName, field);
 		Dialog.show();
 		well=Dialog.getChoice();
 		field=Dialog.getChoice();
