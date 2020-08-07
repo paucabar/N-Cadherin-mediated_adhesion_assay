@@ -270,6 +270,12 @@ if(mode=="Pre-Analysis (parameter tweaking)") {
 		run("Set Measurements...", "  redirect=None decimal=2");
 		run("Analyze Particles...", "size="+minSize+"-Infinity pixel exclude add");
 		selectImage("1 - Merge");
+		count_roi=roiManager("count");
+		for (k=0; k<count_roi; k++) {
+			roiManager("select", k);
+			run("Select Bounding Box");
+			roiManager("update");
+		}
 		roiManager("deselect");
 		roiManager("Set Line Width", 0);
 		setForegroundColor(255, 255, 0);
