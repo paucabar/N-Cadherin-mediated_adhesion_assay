@@ -299,11 +299,20 @@ if(mode=="Pre-Analysis (parameter tweaking)") {
 		// show
 		run("Images to Stack", "name=Stack title=[] use");
 		setBatchMode(false);
-		zoom=getZoom();
-		while(zoom < 4) {
-			run("In [+]");
-			zoom=getZoom();
-		}
+		//getDimensions(width, height, nchannels, nslices, nframes);
+		//toUnscaled(width);
+		//zoom=getZoom();
+		//if (width < 200) {
+		//	while(zoom < 4) {
+		//		run("In [+]");
+		//		zoom=getZoom();
+		//	}
+		//} else if (width < 300) {
+		//	while(zoom < 1) {
+		//		run("In [+]");
+		//		zoom=getZoom();
+		//	}
+		//}
 		roiManager("show all with labels");
 		waitForUser("Finish", "Click to clean up");
 		run("Close All");
