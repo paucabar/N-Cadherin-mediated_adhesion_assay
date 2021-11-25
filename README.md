@@ -24,7 +24,7 @@ Know more about [Object Size & Pixel Size](https://c4science.ch/w/bioimaging_and
 4. Click on <code>Add update site</code>
 5. A new blank row is to be created at the bottom of the update sites list
 6. Type **NeuroMol Lab** in the **Name** column
-7. Type **http://sites.imagej.net/Paucabar/** in the **URL** column
+7. Type **https://sites.imagej.net/NeuroMol-Lab/** in the **URL** column
 8. <code>Close</code> the update sites window
 9. <code>Apply changes</code>
 10. Restart FIJI
@@ -38,7 +38,7 @@ Download an example [image dataset](https://drive.google.com/drive/folders/1TwMU
 
 ### Downsizing (optional)
 
-1. Run the **Post-Acquisition Binning** [macro](https://github.com/paucabar/other_macros) (<code>Plugins > NeuroMol Lab > other macros > Post-Acquisition Binning</code>)
+1. Run the **Post-Acquisition Binning** [macro](https://github.com/paucabar/other_macros) (<code>Plugins > NeuroMol-Lab > other macros > Post-Acquisition Binning</code>)
 2. Select the directory containing the images (.tif files)
 3. Select the _binning_ mode (2x2, 4x4)
 4. Run
@@ -46,7 +46,7 @@ Download an example [image dataset](https://drive.google.com/drive/folders/1TwMU
 
 ### Pre-analysis mode
 
-1. Run the **Cell Adhesion** macro (<code>Plugins > NeuroMol Lab > Cell Adhesion > Cell Adhesion</code>)
+1. Run the **Cell Adhesion** macro (<code>Plugins > NeuroMol-Lab > Cell Adhesion > Cell Adhesion</code>)
 2. Select the directory containing the images (.tif files)
 3. Check **Load project** to use a pre-stablished parameter dataset
 4. Ignore the **Save ROIs** option
@@ -63,7 +63,7 @@ Download an example [image dataset](https://drive.google.com/drive/folders/1TwMU
 
 ### Analysis mode
 
-1. Run the **Cell Adhesion** macro (<code>Plugins > NeuroMol Lab > Cell Adhesion</code>)
+1. Run the **Cell Adhesion** macro (<code>Plugins > NeuroMol-Lab > Cell Adhesion</code>)
 2. Select the directory containing the images (.tif files)
 3. Check **Load project** to use a pre-stablished parameter dataset
 4. Check **Save ROIs** to store the regions of interest of the counted cells
